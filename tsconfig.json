@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "lib": ["es2022"],
+        "target": "es2022",
+        "declaration": false,
+        "removeComments": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "allowSyntheticDefaultImports": true,
+        "moduleResolution": "node",
+        "sourceMap": true,
+        "outDir": "./dist",
+        "incremental": true,
+        "strict": true,
+        "types": ["vitest/globals"]
+    },
+    "include": ["src/**/*.ts"]
+}
