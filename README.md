@@ -60,7 +60,7 @@ const query = convertQuery({ name: { $sw: 'Man', $options: 'i' } }, { operations
 //        must: {
 //            prefix: {
 //                name: {
-//                    value: 'Deb',
+//                    value: 'Man',
 //                    case_insensitive: true
 //                }
 //            }
