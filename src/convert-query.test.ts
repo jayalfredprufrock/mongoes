@@ -86,6 +86,44 @@ describe('convertQuery()', () => {
                 },
             });
         });
+
+        test('nested $elemMatch', () => {
+            expect(
+                convertQuery({ works: { $elemMatch: { key: 'C', bpm: 130, editions: { $elemMatch: { published: { $gt: 1900 } } } } } })
+            ).toEqual({
+                bool: {
+                    must: {
+                        nested: {
+                            path: 'works',
+                            query: {
+                                bool: {
+                                    must: [
+                                        { term: { 'works.key': 'C' } },
+                                        { term: { 'works.bpm': 130 } },
+                                        {
+                                            nested: {
+                                                path: 'works.editions',
+                                                query: {
+                                                    bool: {
+                                                        must: {
+                                                            range: {
+                                                                'works.editions.published': {
+                                                                    gt: 1900,
+                                                                },
+                                                            },
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    ],
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+        });
     });
 
     describe('supports $regex operator', () => {
