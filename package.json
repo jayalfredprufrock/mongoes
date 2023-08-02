@@ -19,7 +19,8 @@
         "build": "vite build",
         "lint": "eslint \"src/**/*.ts\" --fix",
         "prepare": "husky install",
-        "test": "vitest run --coverage"
+        "test": "vitest run --coverage",
+        "typecheck": "tsc --noEmit"
     },
     "lint-staged": {
         "./{src,test}/**/*.ts": [

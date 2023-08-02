@@ -24,7 +24,7 @@ export const convertQuery = (query: any, config?: ConvertQueryConfig, pathPrefix
             addBoolQuery(esQuery, 'must_not', convertQuery(query.$not, config, pathPrefix, true));
         } else if (query[key] instanceof Object) {
             const { $options, ...operatorAndOperand } = query[key];
-            const [operator, operand] = Object.entries(operatorAndOperand)[0];
+            const [operator = '', operand] = Object.entries(operatorAndOperand)[0] ?? [];
             const boolType = negatedOps[operator] ? 'must_not' : 'must';
             addBoolQuery(esQuery, boolType, convertExp(`${pathPrefix}${key}`, negatedOps[operator] ?? operator, operand, $options, config));
         } else if (key[0] !== '$') {
@@ -105,9 +105,7 @@ export const convertExp = (field: string, operator: string, operand: unknown, op
         }
 
         default:
-            if (config?.operations?.[operator]) {
-                return config?.operations?.[operator](field, operand, options);
-            }
+            return config?.operations?.[operator]?.(field, operand, options);
 
             throw new Error('Unsupported operator');
     }

@@ -1,12 +1,14 @@
 {
     "compilerOptions": {
-        "lib": ["es2022"],
+        "lib": ["es2022", "dom"],
         "target": "es2022",
         "declaration": false,
         "removeComments": true,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "allowSyntheticDefaultImports": true,
+        "noUncheckedIndexedAccess": true,
+        "isolatedModules": true,
         "moduleResolution": "node",
         "sourceMap": true,
         "outDir": "./dist",
