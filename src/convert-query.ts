@@ -105,7 +105,10 @@ export const convertExp = (field: string, operator: string, operand: unknown, op
         }
 
         default:
-            return config?.operations?.[operator]?.(field, operand, options);
+            const customOp = config?.operations?.[operator];
+            if (typeof customOp === 'function') {
+                return customOp(field, operand, options);
+            }
 
             throw new Error('Unsupported operator');
     }
