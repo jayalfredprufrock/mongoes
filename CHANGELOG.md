@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 0.1.1
+
+### Patch Changes
+
+-   c6853e8: Use regexp replace instead of replaceAll to extend compatibility
+
 ## 0.1.0
 
 ### Minor Changes
