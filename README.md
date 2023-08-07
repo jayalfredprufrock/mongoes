@@ -41,27 +41,33 @@ const query = convertQuery({
 
 ## Custom Operations
 
+OOTB, mongoes includes a few operators that aren't a part of the MongoDB query specification:
+
+-   `$like` / `$ilike` - Maps to ES "wildcard" queries. Both `*` and `%` can be used to match zero or more characters,
+    while `?` can be used to match exactly one character. The `$ilike` variant is case insensitive, however exactly
+    how ElasticSearch treats case sensitivity is dependent on the underlying field mapping.
+-   `$prefix` - Maps to ES "prefix" query. Can pass "i" within options string to set case insensitive flag.
+-   `$ids` - Maps to ES "ids" query. The operand is an array of document \_ids. The field name is ignored.
+
+Additionally, users can create their own custom operations by including an object of operator functions:
+
 ```ts
 const operations = {
-    $sw: (field: string, operand: unknown, options: unknown) => {
-        const exp: any = { prefix: { [field]: { value: operand } } };
-        if (String(options ?? '').includes('i')) {
-            exp.prefix[field].case_insensitive = true;
-        }
-        return exp;
+    $fuzz: (field: string, operand: string, options?: { fuzziness?: number | 'AUTO' }) => {
+        return { fuzzy: { [field]: { value: operand, ...options } } };
     },
 };
 
-const query = convertQuery({ name: { $sw: 'Man', $options: 'i' } }, { operations });
+const query = convertQuery({ name: { $fuzz: 'Mangeos', $options: { fuzziness: 2 } } }, { operations });
 
 // query
 // {
 //    bool: {
 //        must: {
-//            prefix: {
+//            fuzzy: {
 //                name: {
-//                    value: 'Man',
-//                    case_insensitive: true
+//                    value: 'Mangeos',
+//                    fuzziness: 2
 //                }
 //            }
 //        }
@@ -75,8 +81,11 @@ const query = convertQuery({ name: { $sw: 'Man', $options: 'i' } }, { operations
 -   Uses term queries for all text related operators. Might provide support for "match" queries if there is interest.
 -   Not all operators translate cleanly to ES. The following operators are unsupported: `$where`, `$type`, `$size`, `$mod`
 -   `$elemMatch` translates to a nested query
+-   `$all` operator within `$elemMatch` is converted to must + multiple term expressions.
 -   No guarantee about the syntactical stability of queries to allow future optimizations without a major version bump
 -   Some attempt made to produce compact representations: e.g. removes redundant `{ bool: { must: { bool: exp }}}`
+-   Queries involving regular expressions or wildcards (i.e. `$regex`, `$like`, `$prefix`, etc. ) should be used sparingly since
+    they are significantly more expensive than simpler query operators.
 -   Lucene's regex engine (mostly PCRE) is not fully compatible with JavaScript's. Of particular note:
     -   only support for `i` flag (case insensitive)
     -   no support for `^` and `$` (start/end anchors)

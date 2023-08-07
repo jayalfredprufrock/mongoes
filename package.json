@@ -30,20 +30,20 @@
     "devDependencies": {
         "@changesets/cli": "^2.24.4",
         "@types/node": "18.17.0",
-        "@typescript-eslint/eslint-plugin": "^6.1.0",
-        "@typescript-eslint/parser": "^6.1.0",
-        "@vitest/coverage-v8": "^0.33.0",
-        "eslint": "^8.19.0",
-        "eslint-config-prettier": "^8.5.0",
-        "eslint-plugin-import": "^2.26.0",
+        "@typescript-eslint/eslint-plugin": "^6.2.1",
+        "@typescript-eslint/parser": "^6.2.1",
+        "@vitest/coverage-v8": "^0.34.1",
+        "eslint": "^8.46.0",
+        "eslint-config-prettier": "^9.0.0",
+        "eslint-plugin-import": "^2.28.0",
         "eslint-plugin-prettier": "^5.0.0",
         "husky": "^8.0.1",
         "lint-staged": "^13.0.3",
-        "prettier": "^3.0.0",
+        "prettier": "^3.0.1",
         "typescript": "^5.0.4",
-        "vite": "^4.2.1",
+        "vite": "^4.4.9",
         "vite-dts": "jayalfredprufrock/vite-dts#vite4-with-dist",
-        "vitest": "^0.33.0"
+        "vitest": "^0.34.1"
     },
     "publishConfig": {
         "access": "public"

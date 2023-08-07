@@ -124,6 +124,65 @@ describe('convertQuery()', () => {
                 },
             });
         });
+
+        test('$all within $elemMatch', () => {
+            expect(convertQuery({ works: { $elemMatch: { bpm: 130, keys: { $all: ['C', 'C#'] } } } })).toEqual({
+                bool: {
+                    must: [
+                        {
+                            nested: {
+                                path: 'works',
+                                query: {
+                                    bool: {
+                                        must: [{ term: { 'works.keys': 'C' } }, { term: { 'works.bpm': 130 } }],
+                                    },
+                                },
+                            },
+                        },
+                        {
+                            nested: {
+                                path: 'works',
+                                query: {
+                                    bool: {
+                                        must: [{ term: { 'works.keys': 'C#' } }, { term: { 'works.bpm': 130 } }],
+                                    },
+                                },
+                            },
+                        },
+                    ],
+                },
+            });
+        });
+
+        test('$all within $elemMatch with additional expressions', () => {
+            expect(convertQuery({ name: { $eq: 'Ravel' }, works: { $elemMatch: { bpm: 130, keys: { $all: ['C', 'C#'] } } } })).toEqual({
+                bool: {
+                    must: [
+                        { term: { name: 'Ravel' } },
+                        {
+                            nested: {
+                                path: 'works',
+                                query: {
+                                    bool: {
+                                        must: [{ term: { 'works.keys': 'C' } }, { term: { 'works.bpm': 130 } }],
+                                    },
+                                },
+                            },
+                        },
+                        {
+                            nested: {
+                                path: 'works',
+                                query: {
+                                    bool: {
+                                        must: [{ term: { 'works.keys': 'C#' } }, { term: { 'works.bpm': 130 } }],
+                                    },
+                                },
+                            },
+                        },
+                    ],
+                },
+            });
+        });
     });
 
     describe('supports $regex operator', () => {
@@ -202,26 +261,118 @@ describe('convertQuery()', () => {
         });
     });
 
+    describe('supports $like operators', () => {
+        test('case sensitive variant', () => {
+            expect(
+                convertQuery({
+                    name: { $like: '*b%ss?' },
+                })
+            ).toEqual({
+                bool: {
+                    must: {
+                        wildcard: {
+                            name: {
+                                value: '*b*ss?',
+                            },
+                        },
+                    },
+                },
+            });
+        });
+
+        test('case insensitive variant', () => {
+            expect(
+                convertQuery({
+                    name: { $ilike: '*b%ss?' },
+                })
+            ).toEqual({
+                bool: {
+                    must: {
+                        wildcard: {
+                            name: {
+                                value: '*b*ss?',
+                                case_insensitive: true,
+                            },
+                        },
+                    },
+                },
+            });
+        });
+    });
+
+    describe('supports $prefix operator', () => {
+        test('with no flags', () => {
+            expect(
+                convertQuery({
+                    name: { $prefix: 'deb' },
+                })
+            ).toEqual({
+                bool: {
+                    must: {
+                        prefix: {
+                            name: {
+                                value: 'deb',
+                            },
+                        },
+                    },
+                },
+            });
+        });
+
+        test('with "i" flag', () => {
+            expect(
+                convertQuery({
+                    name: { $prefix: 'deb', $options: 'i' },
+                })
+            ).toEqual({
+                bool: {
+                    must: {
+                        prefix: {
+                            name: {
+                                value: 'deb',
+                                case_insensitive: true,
+                            },
+                        },
+                    },
+                },
+            });
+        });
+    });
+
+    describe('supports $ids operator', () => {
+        test('without options', () => {
+            expect(
+                convertQuery({
+                    id: { $ids: ['123', '456', '789'] },
+                })
+            ).toEqual({
+                bool: {
+                    must: {
+                        ids: {
+                            values: ['123', '456', '789'],
+                        },
+                    },
+                },
+            });
+        });
+    });
+
     describe('supports custom operators', () => {
         const operations = {
-            $sw: (field: string, operand: unknown, options: unknown) => {
-                const exp: any = { prefix: { [field]: { value: operand } } };
-                if (String(options ?? '').includes('i')) {
-                    exp.prefix[field].case_insensitive = true;
-                }
-                return exp;
+            $fuzz: (field: string, operand: string, options?: { fuzziness?: number | 'AUTO' }) => {
+                return { fuzzy: { [field]: { value: operand, ...options } } };
             },
         };
 
         test('without options', () => {
-            expect(convertQuery({ name: { $sw: 'Deb' } }, { operations })).toEqual({
-                bool: { must: { prefix: { name: { value: 'Deb' } } } },
+            expect(convertQuery({ name: { $fuzz: 'Deub' } }, { operations })).toEqual({
+                bool: { must: { fuzzy: { name: { value: 'Deub' } } } },
             });
         });
 
         test('with options', () => {
-            expect(convertQuery({ name: { $sw: 'Deb', $options: 'i' } }, { operations })).toEqual({
-                bool: { must: { prefix: { name: { value: 'Deb', case_insensitive: true } } } },
+            expect(convertQuery({ name: { $fuzz: 'Deub', $options: { fuzziness: 2 } } }, { operations })).toEqual({
+                bool: { must: { fuzzy: { name: { value: 'Deub', fuzziness: 2 } } } },
             });
         });
     });
@@ -381,6 +532,10 @@ describe('convertQuery()', () => {
 
         test('when encountering an operator not starting with "$"', () => {
             expect(() => convertQuery({ field: { bogus: 3 } })).toThrow();
+        });
+
+        test('when encountering a missing/empty operand', () => {
+            expect(() => convertQuery({ field: {} })).toThrow();
         });
     });
 });

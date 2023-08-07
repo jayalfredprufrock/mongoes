@@ -3,7 +3,7 @@
 const negatedOps: Record<string, string> = { $ne: '$eq', $nin: '$in' };
 const boolOps: Record<string, string> = { $and: 'must', $or: 'should', $nor: 'must_not' };
 
-type CustomOperation = (field: string, operand: unknown, options?: unknown) => any;
+type CustomOperation = (field: string, operand: any, options?: any) => any;
 
 interface ConvertQueryConfig {
     operations?: Record<`$${string}`, CustomOperation>;
@@ -14,21 +14,23 @@ export const isOperator = (op: string): op is `$${string}` => {
 };
 
 export const convertQuery = (query: any, config?: ConvertQueryConfig, pathPrefix = '', inBool = false): any => {
+    const expandedQuery = expandNestedAllExps(query);
+
     const esQuery: any = {};
-    for (const key in query) {
+    for (const key in expandedQuery) {
         if (boolOps[key]) {
-            query[key].forEach((q: any) => {
+            expandedQuery[key].forEach((q: any) => {
                 addBoolQuery(esQuery, boolOps[key] as any, convertQuery(q, config, pathPrefix, true));
             });
         } else if (key === '$not') {
-            addBoolQuery(esQuery, 'must_not', convertQuery(query.$not, config, pathPrefix, true));
-        } else if (query[key] instanceof Object) {
-            const { $options, ...operatorAndOperand } = query[key];
+            addBoolQuery(esQuery, 'must_not', convertQuery(expandedQuery.$not, config, pathPrefix, true));
+        } else if (expandedQuery[key] instanceof Object) {
+            const { $options, ...operatorAndOperand } = expandedQuery[key];
             const [operator = '', operand] = Object.entries(operatorAndOperand)[0] ?? [];
             const boolType = negatedOps[operator] ? 'must_not' : 'must';
             addBoolQuery(esQuery, boolType, convertExp(`${pathPrefix}${key}`, negatedOps[operator] ?? operator, operand, $options, config));
         } else if (key[0] !== '$') {
-            addBoolQuery(esQuery, 'must', convertExp(`${pathPrefix}${key}`, '$eq', query[key], undefined, config));
+            addBoolQuery(esQuery, 'must', convertExp(`${pathPrefix}${key}`, '$eq', expandedQuery[key], undefined, config));
         }
     }
 
@@ -42,6 +44,8 @@ export const convertQuery = (query: any, config?: ConvertQueryConfig, pathPrefix
     ) {
         return esQuery.bool.must;
     }
+
+    console.log('converted query', JSON.stringify(esQuery));
 
     return esQuery;
 };
@@ -57,7 +61,57 @@ export const addBoolQuery = (query: any, type: 'must' | 'should' | 'must_not', e
     }
 };
 
-export const convertExp = (field: string, operator: string, operand: unknown, options?: unknown, config?: ConvertQueryConfig): any => {
+/*
+Hacky way to allow $all operator to work as expected
+when used within $elemMatch queries. It looks for queries
+of this form:
+
+{ works: { $elemMatch: { bpm: 130, keys: { $all: ["C","C#"] } } } }
+
+and converts them into an expanded form:
+
+{
+	$and: [
+		{ works: { $elemMatch: { bpm: 130, keys: "C" } } },
+		{ works: { $elemMatch: { bpm: 130, keys: "C#" } } }
+	]
+}
+*/
+export const expandNestedAllExps = (query: any): any => {
+    const q: any = {};
+    Object.entries<any>(query).forEach(([nestedKey, nestedExp]) => {
+        if (nestedExp.$elemMatch) {
+            const expandedExps: any[] = [];
+            const nonExpandedExps: any = {};
+            Object.entries<any>(nestedExp.$elemMatch).forEach(([field, exp]) => {
+                if (exp && typeof exp === 'object' && Array.isArray(exp.$all)) {
+                    expandedExps.push(...exp.$all.map((value: any) => ({ [field]: value })));
+                } else {
+                    nonExpandedExps[field] = exp;
+                }
+            });
+
+            if (expandedExps.length) {
+                if (!q.$and) {
+                    q.$and = [];
+                }
+                expandedExps.forEach(exp => {
+                    q.$and.push({
+                        [nestedKey]: {
+                            $elemMatch: { ...exp, ...nonExpandedExps },
+                        },
+                    });
+                });
+                return;
+            }
+        }
+        q[nestedKey] = nestedExp;
+    });
+
+    return q;
+};
+
+export const convertExp = (field: string, operator: string, operand: any, options?: any, config?: ConvertQueryConfig): any => {
     if (!isOperator(operator)) {
         throw new Error('Operators must start with "$"');
     }
@@ -104,14 +158,35 @@ export const convertExp = (field: string, operator: string, operand: unknown, op
             return { regexp: { [field]: exp } };
         }
 
+        case '$ilike':
+        case '$like': {
+            const exp: Record<string, string | boolean> = { value: String(operand).replaceAll('%', '*') };
+            if (operator.startsWith('$i')) {
+                exp.case_insensitive = true;
+            }
+            return { wildcard: { [field]: exp } };
+        }
+
+        case '$prefix': {
+            const exp: Record<string, string | boolean> = { value: String(operand) };
+            if (options?.toString().includes('i')) {
+                exp.case_insensitive = true;
+            }
+            return { prefix: { [field]: exp } };
+        }
+
+        case '$ids': {
+            return { ids: { values: operand } };
+        }
+
         default:
             const customOp = config?.operations?.[operator];
             if (typeof customOp === 'function') {
                 return customOp(field, operand, options);
             }
-
-            throw new Error('Unsupported operator');
     }
+
+    throw new Error('Unsupported operator');
 };
 
 export const notExp = (exp: unknown): any => {
