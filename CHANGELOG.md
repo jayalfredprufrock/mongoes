@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 0.1.0
+
+### Minor Changes
+
+-   373a4f0: feat: new operators and support for nested $all
+
 ## 0.0.3
 
 ### Patch Changes
