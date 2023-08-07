@@ -160,7 +160,7 @@ export const convertExp = (field: string, operator: string, operand: any, option
 
         case '$ilike':
         case '$like': {
-            const exp: Record<string, string | boolean> = { value: String(operand).replaceAll('%', '*') };
+            const exp: Record<string, string | boolean> = { value: String(operand).replace(/%/g, '*') };
             if (operator.startsWith('$i')) {
                 exp.case_insensitive = true;
             }
