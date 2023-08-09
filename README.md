@@ -43,9 +43,10 @@ const query = convertQuery({
 
 OOTB, mongoes includes a few operators that aren't a part of the MongoDB query specification:
 
--   `$like` / `$ilike` - Maps to ES "wildcard" queries. Both `*` and `%` can be used to match zero or more characters,
-    while `?` can be used to match exactly one character. The `$ilike` variant is case insensitive, however exactly
-    how ElasticSearch treats case sensitivity is dependent on the underlying field mapping.
+-   `$like` - Maps to ES "wildcard" queries. Both `*` and `%` can be used to match zero or more characters,
+    while `?` can be used to match exactly one character. Can pass "i" within options string to set case
+    insensitive flag, however exactly how ElasticSearch treats case sensitivity is dependent on the underlying
+    field mapping.
 -   `$prefix` - Maps to ES "prefix" query. Can pass "i" within options string to set case insensitive flag.
 -   `$ids` - Maps to ES "ids" query. The operand is an array of document \_ids. The field name is ignored.
 

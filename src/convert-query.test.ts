@@ -261,8 +261,8 @@ describe('convertQuery()', () => {
         });
     });
 
-    describe('supports $like operators', () => {
-        test('case sensitive variant', () => {
+    describe('supports $like operator', () => {
+        test('with no flags', () => {
             expect(
                 convertQuery({
                     name: { $like: '*b%ss?' },
@@ -280,10 +280,10 @@ describe('convertQuery()', () => {
             });
         });
 
-        test('case insensitive variant', () => {
+        test('with "i" flag', () => {
             expect(
                 convertQuery({
-                    name: { $ilike: '*b%ss?' },
+                    name: { $like: '*b%ss?', $options: 'i' },
                 })
             ).toEqual({
                 bool: {
@@ -358,21 +358,30 @@ describe('convertQuery()', () => {
     });
 
     describe('supports custom operators', () => {
-        const operations = {
+        const operators = {
             $fuzz: (field: string, operand: string, options?: { fuzziness?: number | 'AUTO' }) => {
                 return { fuzzy: { [field]: { value: operand, ...options } } };
+            },
+            $like: (field: string, operand: string) => {
+                return { like: { [field]: { value: operand } } };
             },
         };
 
         test('without options', () => {
-            expect(convertQuery({ name: { $fuzz: 'Deub' } }, { operators: operations })).toEqual({
+            expect(convertQuery({ name: { $fuzz: 'Deub' } }, { operators })).toEqual({
                 bool: { must: { fuzzy: { name: { value: 'Deub' } } } },
             });
         });
 
         test('with options', () => {
-            expect(convertQuery({ name: { $fuzz: 'Deub', $options: { fuzziness: 2 } } }, { operators: operations })).toEqual({
+            expect(convertQuery({ name: { $fuzz: 'Deub', $options: { fuzziness: 2 } } }, { operators })).toEqual({
                 bool: { must: { fuzzy: { name: { value: 'Deub', fuzziness: 2 } } } },
+            });
+        });
+
+        test('that override built-in operators', () => {
+            expect(convertQuery({ name: { $like: 'Deb' } }, { operators })).toEqual({
+                bool: { must: { like: { name: { value: 'Deb' } } } },
             });
         });
     });

@@ -116,6 +116,11 @@ export const convertExp = (field: string, operator: string, operand: any, option
         throw new Error('Operators must start with "$"');
     }
 
+    const customOp = config?.operators?.[operator];
+    if (typeof customOp === 'function') {
+        return customOp(field, operand, options);
+    }
+
     switch (operator) {
         case '$eq': {
             return { term: { [field]: operand } };
@@ -158,10 +163,9 @@ export const convertExp = (field: string, operator: string, operand: any, option
             return { regexp: { [field]: exp } };
         }
 
-        case '$ilike':
         case '$like': {
             const exp: Record<string, string | boolean> = { value: String(operand).replace(/%/g, '*') };
-            if (operator.startsWith('$i')) {
+            if (options?.toString().includes('i')) {
                 exp.case_insensitive = true;
             }
             return { wildcard: { [field]: exp } };
@@ -178,12 +182,6 @@ export const convertExp = (field: string, operator: string, operand: any, option
         case '$ids': {
             return { ids: { values: operand } };
         }
-
-        default:
-            const customOp = config?.operators?.[operator];
-            if (typeof customOp === 'function') {
-                return customOp(field, operand, options);
-            }
     }
 
     throw new Error('Unsupported operator');
