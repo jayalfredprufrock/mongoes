@@ -39,7 +39,7 @@ const query = convertQuery({
 // }
 ```
 
-## Custom Operations
+## Custom Operators
 
 OOTB, mongoes includes a few operators that aren't a part of the MongoDB query specification:
 
@@ -52,13 +52,13 @@ OOTB, mongoes includes a few operators that aren't a part of the MongoDB query s
 Additionally, users can create their own custom operations by including an object of operator functions:
 
 ```ts
-const operations = {
+const operators = {
     $fuzz: (field: string, operand: string, options?: { fuzziness?: number | 'AUTO' }) => {
         return { fuzzy: { [field]: { value: operand, ...options } } };
     },
 };
 
-const query = convertQuery({ name: { $fuzz: 'Mangeos', $options: { fuzziness: 2 } } }, { operations });
+const query = convertQuery({ name: { $fuzz: 'Mangeos', $options: { fuzziness: 2 } } }, { operators });
 
 // query
 // {
