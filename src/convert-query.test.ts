@@ -365,13 +365,13 @@ describe('convertQuery()', () => {
         };
 
         test('without options', () => {
-            expect(convertQuery({ name: { $fuzz: 'Deub' } }, { operations })).toEqual({
+            expect(convertQuery({ name: { $fuzz: 'Deub' } }, { operators: operations })).toEqual({
                 bool: { must: { fuzzy: { name: { value: 'Deub' } } } },
             });
         });
 
         test('with options', () => {
-            expect(convertQuery({ name: { $fuzz: 'Deub', $options: { fuzziness: 2 } } }, { operations })).toEqual({
+            expect(convertQuery({ name: { $fuzz: 'Deub', $options: { fuzziness: 2 } } }, { operators: operations })).toEqual({
                 bool: { must: { fuzzy: { name: { value: 'Deub', fuzziness: 2 } } } },
             });
         });

@@ -3,10 +3,10 @@
 const negatedOps: Record<string, string> = { $ne: '$eq', $nin: '$in' };
 const boolOps: Record<string, string> = { $and: 'must', $or: 'should', $nor: 'must_not' };
 
-type CustomOperation = (field: string, operand: any, options?: any) => any;
+type CustomOperator = (field: string, operand: any, options?: any) => any;
 
 interface ConvertQueryConfig {
-    operations?: Record<`$${string}`, CustomOperation>;
+    operators?: Record<`$${string}`, CustomOperator>;
 }
 
 export const isOperator = (op: string): op is `$${string}` => {
@@ -180,7 +180,7 @@ export const convertExp = (field: string, operator: string, operand: any, option
         }
 
         default:
-            const customOp = config?.operations?.[operator];
+            const customOp = config?.operators?.[operator];
             if (typeof customOp === 'function') {
                 return customOp(field, operand, options);
             }
