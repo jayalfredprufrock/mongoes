@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 0.2.0
+
+### Minor Changes
+
+-   f55c28f: Breaking Change: custom operations option renamed to operators
+
 ## 0.1.1
 
 ### Patch Changes
