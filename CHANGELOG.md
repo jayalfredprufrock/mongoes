@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 0.3.0
+
+### Minor Changes
+
+-   fe8e741: Breaking Change: remove $ilike custom operator in favor of $options "i" flag pattern
+
 ## 0.2.0
 
 ### Minor Changes
