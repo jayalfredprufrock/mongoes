@@ -45,8 +45,6 @@ export const convertQuery = (query: any, config?: ConvertQueryConfig, pathPrefix
         return esQuery.bool.must;
     }
 
-    console.log('converted query', JSON.stringify(esQuery));
-
     return esQuery;
 };
 
