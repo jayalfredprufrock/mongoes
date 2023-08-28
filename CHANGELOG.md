@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 0.3.1
+
+### Patch Changes
+
+-   f8a347d: fix: remove debug log
+
 ## 0.3.0
 
 ### Minor Changes
