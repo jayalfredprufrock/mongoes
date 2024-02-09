@@ -109,6 +109,22 @@ export const expandNestedAllExps = (query: any): any => {
     return q;
 };
 
+export const traverseMongoQuery = (query: any, cb: (field: string, $op: string, exp: any) => void, traverseNested = false) => {
+    if (!query || typeof query !== 'object') return;
+    Object.entries(query).forEach(([key, value]) => {
+        if (key.startsWith('$')) {
+            if (Array.isArray(value) && (key === '$and' || key === '$or' || key === '$nor')) {
+                value.forEach(v => traverseMongoQuery(v, cb, traverseNested));
+            } else if (key === '$not' || (key === '$elemMatch' && traverseNested)) {
+                traverseMongoQuery(value, cb, traverseNested);
+            }
+        } else {
+            const $op = typeof value === 'object' && value ? Object.keys(value)[0]! : '$eq';
+            cb(key, $op, query);
+        }
+    });
+};
+
 export const convertExp = (field: string, operator: string, operand: any, options?: any, config?: ConvertQueryConfig): any => {
     if (!isOperator(operator)) {
         throw new Error('Operators must start with "$"');

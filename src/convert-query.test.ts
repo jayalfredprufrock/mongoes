@@ -16,14 +16,6 @@ describe('convertQuery()', () => {
             expect(convertQuery({ name: 'Ravel' })).toEqual({ bool: { must: { term: { name: 'Ravel' } } } });
         });
 
-        test('shorthand equality with implicit $and', () => {
-            expect(convertQuery({ name: 'Ravel', profession: 'composer' })).toEqual({
-                bool: {
-                    must: [{ term: { name: 'Ravel' } }, { term: { profession: 'composer' } }],
-                },
-            });
-        });
-
         test('$exists: true', () => {
             expect(convertQuery({ name: { $exists: true } })).toEqual({ bool: { must: { exists: { field: 'name' } } } });
         });
@@ -396,6 +388,14 @@ describe('convertQuery()', () => {
         test('$and', () => {
             expect(convertQuery({ $and: [{ firstName: 'Maurice' }, { lastName: 'Ravel' }] })).toEqual({
                 bool: { must: [{ term: { firstName: 'Maurice' } }, { term: { lastName: 'Ravel' } }] },
+            });
+        });
+
+        test('implicit $and', () => {
+            expect(convertQuery({ name: 'Ravel', profession: 'composer' })).toEqual({
+                bool: {
+                    must: [{ term: { name: 'Ravel' } }, { term: { profession: 'composer' } }],
+                },
             });
         });
 
