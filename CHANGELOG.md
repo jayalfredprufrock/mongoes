@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 0.4.0
+
+### Minor Changes
+
+-   e742715: feat: add $empty operator
+
 ## 0.3.2
 
 ### Patch Changes
