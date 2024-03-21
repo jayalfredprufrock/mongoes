@@ -109,14 +109,22 @@ export const expandNestedAllExps = (query: any): any => {
     return q;
 };
 
-export const traverseMongoQuery = (query: any, cb: (field: string, $op: string, exp: any) => void, traverseNested = false) => {
+export const traverseMongoQuery = (
+    query: any,
+    cb: (field: string, $op: string, exp: any) => void,
+    options?: { traverseNested?: boolean; traverseCompound?: boolean }
+) => {
+    const { traverseNested, traverseCompound } = options ?? {};
     if (!query || typeof query !== 'object') return;
     Object.entries(query).forEach(([key, value]) => {
         if (key.startsWith('$')) {
+            if (traverseCompound && ['$and', '$or', '$nor', '$not'].includes(key)) {
+                cb('', key, query);
+            }
             if (Array.isArray(value) && (key === '$and' || key === '$or' || key === '$nor')) {
-                value.forEach(v => traverseMongoQuery(v, cb, traverseNested));
+                value.forEach(v => traverseMongoQuery(v, cb, options));
             } else if (key === '$not' || (key === '$elemMatch' && traverseNested)) {
-                traverseMongoQuery(value, cb, traverseNested);
+                traverseMongoQuery(value, cb, options);
             }
         } else {
             const $op = typeof value === 'object' && value ? Object.keys(value)[0]! : '$eq';
@@ -195,6 +203,13 @@ export const convertExp = (field: string, operator: string, operand: any, option
 
         case '$ids': {
             return { ids: { values: operand } };
+        }
+
+        case '$empty': {
+            if (operand) {
+                return { bool: { should: [notExp({ exists: { field } }), { term: { [field]: '' } }] } };
+            }
+            return { bool: { must: [{ exists: { field } }, notExp({ term: { [field]: '' } })] } };
         }
     }
 

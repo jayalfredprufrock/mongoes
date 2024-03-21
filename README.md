@@ -49,6 +49,7 @@ OOTB, mongoes includes a few operators that aren't a part of the MongoDB query s
     field mapping.
 -   `$prefix` - Maps to ES "prefix" query. Can pass "i" within options string to set case insensitive flag.
 -   `$ids` - Maps to ES "ids" query. The operand is an array of document \_ids. The field name is ignored.
+-   `$empty` - Works just like `$exists`, but does not consider empty strings to exist.
 
 Additionally, users can create their own custom operations by including an object of operator functions:
 

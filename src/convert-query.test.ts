@@ -25,6 +25,18 @@ describe('convertQuery()', () => {
                 bool: { must_not: { exists: { field: 'name' } } },
             });
         });
+
+        test('$empty: true', () => {
+            expect(convertQuery({ name: { $empty: true } })).toEqual({
+                bool: { should: [{ bool: { must_not: { exists: { field: 'name' } } } }, { term: { name: '' } }] },
+            });
+        });
+
+        test('$empty: false', () => {
+            expect(convertQuery({ name: { $empty: false } })).toEqual({
+                bool: { must: [{ exists: { field: 'name' } }, { bool: { must_not: { term: { name: '' } } } }] },
+            });
+        });
     });
 
     describe('supports range comparison operators', () => {
