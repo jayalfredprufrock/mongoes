@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 0.4.1
+
+### Patch Changes
+
+-   c5d3d9a: fix: add minimum_should_match=1 to $or conditions
+
 ## 0.4.0
 
 ### Minor Changes
