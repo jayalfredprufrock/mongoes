@@ -1,7 +1,7 @@
 # MongoES
 
 Meet the tiny and tasty TypeScript library for best-effort conversion of MongoDB search queries into equivalent ElasticSearch queries.
-Supports most queries that make sense within the context of ES and also provides support for custom operations.
+Supports most queries that make sense within the context of ES and also provides support for custom operations. Zero dependencies.
 
 ```sh
 npm i @jayalfredprufrock/mongoes

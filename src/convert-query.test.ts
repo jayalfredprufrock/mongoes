@@ -413,7 +413,7 @@ describe('convertQuery()', () => {
 
         test('$or', () => {
             expect(convertQuery({ $or: [{ firstName: 'Maurice' }, { lastName: 'Ravel' }] })).toEqual({
-                bool: { should: [{ term: { firstName: 'Maurice' } }, { term: { lastName: 'Ravel' } }] },
+                bool: { should: [{ term: { firstName: 'Maurice' } }, { term: { lastName: 'Ravel' } }], minimum_should_match: 1 },
             });
         });
 
@@ -440,6 +440,7 @@ describe('convertQuery()', () => {
                         {
                             bool: {
                                 should: [{ term: { lastName: 'Ravel' } }, { term: { lastName: 'Debussy' } }],
+                                minimum_should_match: 1,
                             },
                         },
                     ],
@@ -467,6 +468,7 @@ describe('convertQuery()', () => {
                             },
                         },
                     ],
+                    minimum_should_match: 1,
                 },
             });
         });
@@ -483,6 +485,7 @@ describe('convertQuery()', () => {
             ).toEqual({
                 bool: {
                     should: [{ term: { profession: 'composer' } }, { term: { lastName: 'Ravel' } }],
+                    minimum_should_match: 1,
                     must: [{ term: { firstName: 'Maurice' } }, { range: { year: { gt: 1928 } } }],
                     must_not: [{ term: { firstName: 'Claude' } }, { term: { lastName: 'Debussy' } }],
                 },
@@ -509,6 +512,7 @@ describe('convertQuery()', () => {
                         { bool: { must: [{ term: { firstName: 'Maurice' } }, { term: { lastName: 'Ravel' } }] } },
                         { bool: { must: [{ term: { firstName: 'Claude' } }, { term: { lastName: 'Debussy' } }] } },
                     ],
+                    minimum_should_match: 1,
                 },
             });
         });
@@ -538,6 +542,7 @@ describe('convertQuery()', () => {
                                     { bool: { must: { term: { lastName: 'Ravel' } }, must_not: { term: { firstName: 'Claude' } } } },
                                     { bool: { must: { term: { lastName: 'Debussy' } }, must_not: { term: { firstName: 'Maurice' } } } },
                                 ],
+                                minimum_should_match: 1,
                             },
                         },
                     ],

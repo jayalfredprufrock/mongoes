@@ -52,10 +52,15 @@ export const addBoolQuery = (query: any, type: 'must' | 'should' | 'must_not', e
     if (!query.bool) {
         query.bool = {};
     }
+
     if (query.bool[type]) {
         query.bool[type] = Array.isArray(query.bool[type]) ? [...query.bool[type], exp] : [query.bool[type], exp];
     } else {
         query.bool[type] = exp;
+    }
+
+    if (type === 'should') {
+        query.bool.minimum_should_match = 1;
     }
 };
 
