@@ -5,16 +5,28 @@
     "description": "",
     "author": "Andrew Smiley <jayalfredprufrock@gmail.com>",
     "license": "MIT",
-    "main": "dist/mongoes.cjs.js",
-    "module": "dist/mongoes.es.js",
+    "main": "./dist/mongoes.cjs.js",
+    "types": "./dist/mongoes.cjs.d.ts",
     "exports": {
         ".": {
-            "require": "./dist/mongoes.cjs.js",
-            "import": "./dist/mongoes.es.js"
+            "require": {
+                "default": "./dist/mongoes.cjs.js",
+                "types": "./dist/mongoes.cjs.d.ts"
+            },
+            "import": {
+                "default": "./dist/mongoes.es.js",
+                "types": "./dist/mongoes.cjs.d.ts"
+            }
         },
         "./sift": {
-            "require": "./dist/sift.cjs.js",
-            "import": "./dist/sift.es.js"
+            "require": {
+                "default": "./dist/sift.cjs.js",
+                "types": "./dist/mongoes.cjs.d.ts"
+            },
+            "import": {
+                "default": "./dist/sift.es.js",
+                "types": "./dist/mongoes.cjs.d.ts"
+            }
         }
     },
     "files": [
