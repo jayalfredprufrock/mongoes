@@ -8,8 +8,14 @@
     "main": "dist/mongoes.cjs.js",
     "module": "dist/mongoes.es.js",
     "exports": {
-        "require": "./dist/mongoes.cjs.js",
-        "import": "./dist/mongoes.es.js"
+        ".": {
+            "require": "./dist/mongoes.cjs.js",
+            "import": "./dist/mongoes.es.js"
+        },
+        "./sift": {
+            "require": "./dist/sift/sift.cjs.js",
+            "import": "./dist/sift/sift.es.js"
+        }
     },
     "files": [
         "src",

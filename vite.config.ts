@@ -4,11 +4,15 @@ import { dts } from 'vite-dts';
 export default defineConfig({
     build: {
         lib: {
-            entry: 'src/index.ts',
+            entry: {
+                mongoes: 'src/index.ts',
+                sift: 'src/sift.ts',
+            },
             formats: ['es', 'cjs'],
-            fileName: format => `mongoes.${format}.js`,
+            fileName: (format, entryName) => `${entryName}.${format}.js`,
         },
         rollupOptions: {
+            external: ['sift'],
             output: {
                 sourcemapExcludeSources: true,
             },
