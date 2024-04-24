@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 0.4.5
+
+### Patch Changes
+
+-   c572790: fix: publish types properly for sift extension
+
 ## 0.4.4
 
 ### Patch Changes
