@@ -10,22 +10,22 @@
     "exports": {
         ".": {
             "require": {
-                "default": "./dist/mongoes.cjs.js",
-                "types": "./dist/mongoes.cjs.d.ts"
+                "types": "./dist/mongoes.cjs.d.ts",
+                "default": "./dist/mongoes.cjs.js"
             },
             "import": {
-                "default": "./dist/mongoes.es.js",
-                "types": "./dist/mongoes.cjs.d.ts"
+                "types": "./dist/mongoes.cjs.d.ts",
+                "default": "./dist/mongoes.es.js"
             }
         },
         "./sift": {
             "require": {
-                "default": "./dist/sift.cjs.js",
-                "types": "./dist/mongoes.cjs.d.ts"
+                "types": "./dist/mongoes.cjs.d.ts",
+                "default": "./dist/sift.cjs.js"
             },
             "import": {
-                "default": "./dist/sift.es.js",
-                "types": "./dist/mongoes.cjs.d.ts"
+                "types": "./dist/mongoes.cjs.d.ts",
+                "default": "./dist/sift.es.js"
             }
         }
     },
