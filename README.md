@@ -32,6 +32,7 @@ const query = convertQuery({
 //                          { term: { name: 'mango' } },
 //                          { term: { name: 'el mango' } }
 //                    ],
+//                    minimum_should_match: 1
 //                },
 //            },
 //        ],
@@ -39,17 +40,23 @@ const query = convertQuery({
 // }
 ```
 
+## Built-in Operators
+
+See [MongoDb docs](https://www.mongodb.com/docs/manual/reference/operator/query/) for a list of operators and options. Also check out the [sift.js](https://github.com/crcn/sift.js#readme) library, which provides support for evaluating/filtering in-memory objects using this same mongo-style syntax. A major motiviation for MongoES was to have a single filtering/querying syntax that could be used both against ES indexes and in-memory objects.
+
 ## Custom Operators
 
 OOTB, mongoes includes a few operators that aren't a part of the MongoDB query specification:
 
--   `$like` - Maps to ES "wildcard" queries. Both `*` and `%` can be used to match zero or more characters,
-    while `?` can be used to match exactly one character. Can pass "i" within options string to set case
-    insensitive flag, however exactly how ElasticSearch treats case sensitivity is dependent on the underlying
-    field mapping.
--   `$prefix` - Maps to ES "prefix" query. Can pass "i" within options string to set case insensitive flag.
--   `$ids` - Maps to ES "ids" query. The operand is an array of document \_ids. The field name is ignored.
--   `$empty` - Works just like `$exists`, but does not consider empty strings to exist.
+-   `$like` - Maps to [ES Wildcard](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-wildcard-query.html)
+    queries. Both `*` and `%` can be used to match zero or more characters, while `?` can be used to match exactly one character.
+    Like the `$regex` operator, set `$options` to "i" to set the ES option `case_insensitive` to true. Note that exactly how
+    ElasticSearch treats case sensitivity is also dependent on the underlying field mapping.
+-   `$prefix` - Maps to [ES Prefix](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-prefix-query.html)
+    queries. Similar to `$like`, supports passing "i" to `$options` for case insensitivity.
+-   `$ids` - Maps to ES "ids" query. The operand is an array of document \_ids. The field name is not used when constructing the ES
+    query, however it is used to specify a document-level id field for supporting Sift queries.
+-   `$empty` - Works just like `$exists`, but does not consider empty strings (after trimming) to exist.
 
 Additionally, users can create their own custom operations by including an object of operator functions:
 
@@ -79,11 +86,14 @@ const query = convertQuery({ name: { $fuzz: 'Mangeos', $options: { fuzziness: 2 
 
 ## Gotchas
 
--   Assumes valid mongodb queries. No guarantees about what is returned/thrown for invalid mongodb queries.
+-   Assumes valid mongodb queries. No guarantees about what is returned/thrown for invalid mongodb queries. Please create an issue
+    if there is specific invalid syntax that you think should be handled differently at runtime.
 -   Uses term queries for all text related operators. Might provide support for "match" queries if there is interest.
 -   Not all operators translate cleanly to ES. The following operators are unsupported: `$where`, `$type`, `$size`, `$mod`
 -   `$elemMatch` translates to a nested query
--   `$all` operator within `$elemMatch` is converted to must + multiple term expressions.
+-   `$or` queries always translate into `should` + `minimum_should_match=1`. This allows adjacent $and operators (including implicit)
+    to work as expected.
+-   `$all` operator within `$elemMatch` is converted to `must` + multiple `term` expressions.
 -   No guarantee about the syntactical stability of queries to allow future optimizations without a major version bump
 -   Some attempt made to produce compact representations: e.g. removes redundant `{ bool: { must: { bool: exp }}}`
 -   Queries involving regular expressions or wildcards (i.e. `$regex`, `$like`, `$prefix`, etc. ) should be used sparingly since
