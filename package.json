@@ -9,24 +9,12 @@
     "types": "./dist/mongoes.cjs.d.ts",
     "exports": {
         ".": {
-            "require": {
-                "types": "./dist/mongoes.cjs.d.ts",
-                "default": "./dist/mongoes.cjs.js"
-            },
-            "import": {
-                "types": "./dist/mongoes.cjs.d.ts",
-                "default": "./dist/mongoes.es.js"
-            }
+            "require": "./dist/mongoes.cjs.js",
+            "import": "./dist/mongoes.es.js"
         },
         "./sift": {
-            "require": {
-                "types": "./dist/mongoes.cjs.d.ts",
-                "default": "./dist/sift.cjs.js"
-            },
-            "import": {
-                "types": "./dist/mongoes.cjs.d.ts",
-                "default": "./dist/sift.es.js"
-            }
+            "require": "./dist/sift.cjs.js",
+            "import": "./dist/sift.es.js"
         }
     },
     "files": [
@@ -60,7 +48,7 @@
         "prettier": "^3.0.1",
         "typescript": "^5.0.4",
         "vite": "^4.4.9",
-        "vite-dts": "jayalfredprufrock/vite-dts#vite4-with-dist",
+        "vite-plugin-dts": "^3.9.0",
         "vitest": "^0.34.1"
     },
     "publishConfig": {

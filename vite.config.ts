@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import { dts } from 'vite-dts';
+import dts from 'vite-plugin-dts';
 
 export default defineConfig({
     build: {
@@ -9,7 +9,7 @@ export default defineConfig({
                 sift: 'src/sift.ts',
             },
             formats: ['es', 'cjs'],
-            fileName: (format, entryName) => `${entryName}.${format}.js`,
+            fileName: (format: string, entryName: string) => `${entryName}.${format}.js`,
         },
         rollupOptions: {
             external: ['sift'],
@@ -21,8 +21,8 @@ export default defineConfig({
         target: 'es2022',
         minify: false,
     },
-    plugins: [dts()],
+    plugins: [dts({ rollupTypes: true })],
     test: {
         globals: true,
     },
-} as any);
+});
