@@ -13,8 +13,8 @@
             "import": "./dist/mongoes.es.js"
         },
         "./sift": {
-            "require": "./dist/sift/sift.cjs.js",
-            "import": "./dist/sift/sift.es.js"
+            "require": "./dist/sift.cjs.js",
+            "import": "./dist/sift.es.js"
         }
     },
     "files": [
