@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 0.4.2
+
+### Patch Changes
+
+-   fbc06e5: feat: include configuration for custom operators in sift
+
 ## 0.4.1
 
 ### Patch Changes
