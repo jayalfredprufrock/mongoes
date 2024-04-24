@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 0.4.6
+
+### Patch Changes
+
+-   35fac20: fix: specify types before default per typescript recommendations
+
 ## 0.4.5
 
 ### Patch Changes
