@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 0.4.3
+
+### Patch Changes
+
+-   9ff3796: fix: export sift entry point properly
+
 ## 0.4.2
 
 ### Patch Changes
