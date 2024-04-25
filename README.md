@@ -99,7 +99,9 @@ Then either import and use the wrapped sift directly:
 ```ts
 import { sift } from '@jayalfredprufrock/mongoes/sift';
 
-const sifter = sift({ name: { $like: 'M?ngoes' } })({ name: 'Mangoes' });
+const sifter = sift({ name: { $like: 'M?ngoes' } });
+
+sifter({ name: 'Mangoes' }); // true
 ```
 
 or use siftCustomOperations to construct your own:
@@ -108,12 +110,9 @@ or use siftCustomOperations to construct your own:
 import sift from 'sift';
 import { siftCustomOperations } from '@jayalfredprufrock/mongoes/sift';
 
-const sifter = sift(
-    { name: { $like: 'M?ngoes' } },
-    {
-        operations: siftCustomOperations,
-    }
-)({ name: 'Mongoes' });
+const sifter = sift({ name: { $like: 'M?ngoes' } }, { operations: siftCustomOperations });
+
+sifter({ name: 'Mongoes' }); // true
 ```
 
 ## Notes
