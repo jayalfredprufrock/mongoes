@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 0.4.9
+
+### Patch Changes
+
+- b99dd37: fix: dont switch to module just yet
+
 ## 0.4.8
 
 ### Patch Changes
