@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 0.4.7
+
+### Patch Changes
+
+-   a419a32: use different plugin to export dts files
+
 ## 0.4.6
 
 ### Patch Changes
