@@ -86,10 +86,12 @@ const query = convertQuery({ name: { $fuzz: 'Mangeos', $options: { fuzziness: 2 
 
 ### Sift Filters
 
-This library was originally designed to allow for a single syntax to query/filter both elasticsearch documents and in-memory object arrays, the latter solved via the existing [sift.js](https://github.com/crcn/sift.js#readme) library. For those with similar needs, mongoes also exports a set of custom sift.js operators so that the custom operators this library includes can be used with sift.js.
+For those using this library alongside [sift.js](https://github.com/crcn/sift.js#readme), mongoes exports a set of custom sift.js operators providing support for the custom operators this library ships with.
+
+To use, begin by making sure sift.js is installed:
 
 ```sh
-npm i sift // install peer dependency
+npm i sift
 ```
 
 Then either import and use the wrapped sift directly:
@@ -97,24 +99,24 @@ Then either import and use the wrapped sift directly:
 ```ts
 import { sift } from '@jayalfredprufrock/mongoes/sift';
 
-const sifter = sift({ name: { $like: 'Rav?l' } })({ name: 'Ravel' });
+const sifter = sift({ name: { $like: 'M?ngoes' } })({ name: 'Mangoes' });
 ```
 
-or use siftCustomOperations to construct your own
+or use siftCustomOperations to construct your own:
 
 ```ts
 import sift from 'sift';
 import { siftCustomOperations } from '@jayalfredprufrock/mongoes/sift';
 
 const sifter = sift(
-    { name: { $like: 'Rav?l' } },
+    { name: { $like: 'M?ngoes' } },
     {
         operations: siftCustomOperations,
     }
-)({ name: 'Ravel' });
+)({ name: 'Mongoes' });
 ```
 
-## Gotchas
+## Notes
 
 -   Assumes valid mongodb queries. No guarantees about what is returned/thrown for invalid mongodb queries. Please create an issue
     if there is specific invalid syntax that you think should be handled differently at runtime.
