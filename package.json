@@ -2,7 +2,7 @@
     "name": "@jayalfredprufrock/mongoes",
     "type": "module",
     "private": false,
-    "version": "0.4.7",
+    "version": "0.4.8",
     "description": "",
     "author": "Andrew Smiley <jayalfredprufrock@gmail.com>",
     "license": "MIT",
