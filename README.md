@@ -84,6 +84,36 @@ const query = convertQuery({ name: { $fuzz: 'Mangeos', $options: { fuzziness: 2 
 //}
 ```
 
+### Sift Filters
+
+This library was originally designed to allow for a single syntax to query/filter both elasticsearch documents and in-memory object arrays, the latter solved via the existing [sift.js](https://github.com/crcn/sift.js#readme) library. For those with similar needs, mongoes also exports a set of custom sift.js operators so that the custom operators this library includes can be used with sift.js.
+
+```sh
+npm i sift // install peer dependency
+```
+
+Then either import and use the wrapped sift directly:
+
+```ts
+import { sift } from '@jayalfredprufrock/mongoes/sift';
+
+const sifter = sift({ name: { $like: 'Rav?l' } })({ name: 'Ravel' });
+```
+
+or use siftCustomOperations to construct your own
+
+```ts
+import sift from 'sift';
+import { siftCustomOperations } from '@jayalfredprufrock/mongoes/sift';
+
+const sifter = sift(
+    { name: { $like: 'Rav?l' } },
+    {
+        operations: siftCustomOperations,
+    }
+)({ name: 'Ravel' });
+```
+
 ## Gotchas
 
 -   Assumes valid mongodb queries. No guarantees about what is returned/thrown for invalid mongodb queries. Please create an issue
