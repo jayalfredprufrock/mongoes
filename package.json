@@ -1,6 +1,5 @@
 {
     "name": "@jayalfredprufrock/mongoes",
-    "type": "module",
     "private": false,
     "version": "0.4.8",
     "description": "",
