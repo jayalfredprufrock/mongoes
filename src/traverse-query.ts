@@ -1,5 +1,3 @@
-import { deprecate } from 'util';
-
 export interface TraverseQueryOptions {
     traverseNested?: boolean;
     traverseCompound?: boolean;
@@ -45,11 +43,3 @@ export const traverseQuery = (
         }
     });
 };
-
-// deprecated
-export const traverseMongoQuery = deprecate(
-    (query: any, cb: (field: string, $op: string, value: any) => void, options?: TraverseQueryOptions) => {
-        traverseQuery(query, ({ field, $op, value }) => cb(field, $op, value), options);
-    },
-    'traverseMongoQuery() is deprecated, use traverseQuery() instead.'
-);

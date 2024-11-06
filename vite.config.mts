@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
@@ -7,6 +8,7 @@ export default defineConfig({
             entry: {
                 mongoes: 'src/index.ts',
                 sift: 'src/sift.ts',
+                util: 'src/util.ts',
             },
             formats: ['es', 'cjs'],
             fileName: (format: string, entryName: string) => `${entryName}.${format}.js`,
