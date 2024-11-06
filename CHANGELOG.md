@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 0.5.2
+
+### Patch Changes
+
+-   62bb8e3: specify exports for new util export
+
 ## 0.5.1
 
 ### Patch Changes
