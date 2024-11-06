@@ -27,6 +27,16 @@
                 "types": "./dist/sift.d.ts",
                 "default": "./dist/sift.es.js"
             }
+        },
+        "./util": {
+            "require": {
+                "types": "./dist/util.d.ts",
+                "default": "./dist/util.cjs.js"
+            },
+            "import": {
+                "types": "./dist/util.d.ts",
+                "default": "./dist/util.es.js"
+            }
         }
     },
     "files": [
