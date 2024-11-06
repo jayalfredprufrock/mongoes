@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 0.5.0
+
+### Minor Changes
+
+- 8cb3b4c: feat: improve traverseQuery, deprecate traverseMongoQuery
+
 ## 0.4.9
 
 ### Patch Changes
