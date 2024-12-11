@@ -23,6 +23,15 @@ export const siftCustomOperations: Record<string, OperationCreator<any>> = {
 
         return createEqualsOperation((value: unknown) => regex.test(String(value).trim()), ownerQuery, options);
     },
+    $unlike(params, ownerQuery, options) {
+        const caseInsensitive = ownerQuery.$options?.toString().includes('i');
+
+        // convert "*" and "%" to ".*" while escaping any other regex tokens
+        const exp = escapeRegex(String(params).trim().replaceAll('%', '*'), ['*', '?']).replaceAll('*', '.*').replaceAll('?', '.');
+        const regex = new RegExp(exp, caseInsensitive ? 'si' : 's');
+
+        return createEqualsOperation((value: unknown) => !regex.test(String(value).trim()), ownerQuery, options);
+    },
     $prefix(params, ownerQuery, options) {
         const caseInsensitive = ownerQuery.$options?.toString().includes('i');
         let exp = String(params).trim();
@@ -56,6 +65,16 @@ export const siftCustomOperations: Record<string, OperationCreator<any>> = {
             (value: unknown) => {
                 const isEmpty = value === undefined || (typeof value === 'string' && !value.trim());
                 return params === isEmpty;
+            },
+            ownerQuery,
+            options
+        );
+    },
+    $nempty(params, ownerQuery, options) {
+        return createEqualsOperation(
+            (value: unknown) => {
+                const isEmpty = value === undefined || (typeof value === 'string' && !value.trim());
+                return params !== isEmpty;
             },
             ownerQuery,
             options

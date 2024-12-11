@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-const negatedOps: Record<string, string> = { $ne: '$eq', $nin: '$in' };
+const negatedOps: Record<string, string> = { $ne: '$eq', $nin: '$in', $unlike: '$like', $nempty: '$empty' };
 const boolOps: Record<string, string> = { $and: 'must', $or: 'should', $nor: 'must_not' };
 
 type CustomOperator = (field: string, operand: any, options?: any) => any;

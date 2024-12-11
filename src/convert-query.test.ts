@@ -37,6 +37,18 @@ describe('convertQuery()', () => {
                 bool: { must: [{ exists: { field: 'name' } }, { bool: { must_not: { term: { name: '' } } } }] },
             });
         });
+
+        test('$nempty: true', () => {
+            expect(convertQuery({ name: { $nempty: true } })).toEqual({
+                bool: { must_not: { bool: { should: [{ bool: { must_not: { exists: { field: 'name' } } } }, { term: { name: '' } }] } } },
+            });
+        });
+
+        test('$nempty: false', () => {
+            expect(convertQuery({ name: { $nempty: false } })).toEqual({
+                bool: { must_not: { bool: { must: [{ exists: { field: 'name' } }, { bool: { must_not: { term: { name: '' } } } }] } } },
+            });
+        });
     });
 
     describe('supports range comparison operators', () => {
@@ -292,6 +304,45 @@ describe('convertQuery()', () => {
             ).toEqual({
                 bool: {
                     must: {
+                        wildcard: {
+                            name: {
+                                value: '*b*ss?',
+                                case_insensitive: true,
+                            },
+                        },
+                    },
+                },
+            });
+        });
+    });
+
+    describe('supports $unlike operator', () => {
+        test('with no flags', () => {
+            expect(
+                convertQuery({
+                    name: { $unlike: '*b%ss?' },
+                })
+            ).toEqual({
+                bool: {
+                    must_not: {
+                        wildcard: {
+                            name: {
+                                value: '*b*ss?',
+                            },
+                        },
+                    },
+                },
+            });
+        });
+
+        test('with "i" flag', () => {
+            expect(
+                convertQuery({
+                    name: { $unlike: '*b%ss?', $options: 'i' },
+                })
+            ).toEqual({
+                bool: {
+                    must_not: {
                         wildcard: {
                             name: {
                                 value: '*b*ss?',
