@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 0.6.0
+
+### Minor Changes
+
+-   df309ee: feat: new $unlike and $nempty custom operators
+
 ## 0.5.2
 
 ### Patch Changes
