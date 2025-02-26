@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 0.7.0
+
+### Minor Changes
+
+-   8be81d3: feat: add parent to traverseQuery context
+
 ## 0.6.0
 
 ### Minor Changes
