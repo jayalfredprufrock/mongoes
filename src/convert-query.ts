@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-const negatedOps: Record<string, string> = { $ne: '$eq', $nin: '$in', $unlike: '$like', $nempty: '$empty' };
+const negatedOps: Record<string, string> = { $ne: '$eq', $nin: '$in', $unlike: '$like', $nempty: '$empty', $excludes: '$includes' };
 const boolOps: Record<string, string> = { $and: 'must', $or: 'should', $nor: 'must_not' };
 
 type CustomOperator = (field: string, operand: any, options?: any) => any;
@@ -168,6 +168,14 @@ export const convertExp = (field: string, operator: string, operand: any, option
 
         case '$like': {
             const exp: Record<string, string | boolean> = { value: String(operand).replace(/%/g, '*') };
+            if (options?.toString().includes('i')) {
+                exp.case_insensitive = true;
+            }
+            return { wildcard: { [field]: exp } };
+        }
+
+        case '$includes': {
+            const exp: Record<string, string | boolean> = { value: `*${String(operand)}*` };
             if (options?.toString().includes('i')) {
                 exp.case_insensitive = true;
             }

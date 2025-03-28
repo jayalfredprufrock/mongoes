@@ -52,6 +52,7 @@ OOTB, mongoes includes a few operators that aren't a part of the MongoDB query s
     queries. Both `*` and `%` can be used to match zero or more characters, while `?` can be used to match exactly one character.
     Like the `$regex` operator, set `$options` to "i" to set the ES option `case_insensitive` to true. Note that exactly how
     ElasticSearch treats case sensitivity is also dependent on the underlying field mapping.
+-   `$includes` (`$excludes`) - Shorthand for `{ $like: '*{search}*'}`. May eventually use a more optimized approach for text fields.
 -   `$prefix` - Maps to [ES Prefix](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-prefix-query.html)
     queries. Similar to `$like`, supports passing "i" to `$options` for case insensitivity.
 -   `$ids` - Maps to ES "ids" query. The operand is an array of document \_ids. The field name is not used when constructing the ES

@@ -355,6 +355,84 @@ describe('convertQuery()', () => {
         });
     });
 
+    describe('supports $includes operator', () => {
+        test('with no flags', () => {
+            expect(
+                convertQuery({
+                    name: { $includes: 'bus' },
+                })
+            ).toEqual({
+                bool: {
+                    must: {
+                        wildcard: {
+                            name: {
+                                value: '*bus*',
+                            },
+                        },
+                    },
+                },
+            });
+        });
+
+        test('with "i" flag', () => {
+            expect(
+                convertQuery({
+                    name: { $includes: 'bus', $options: 'i' },
+                })
+            ).toEqual({
+                bool: {
+                    must: {
+                        wildcard: {
+                            name: {
+                                value: '*bus*',
+                                case_insensitive: true,
+                            },
+                        },
+                    },
+                },
+            });
+        });
+    });
+
+    describe('supports $excludes operator', () => {
+        test('with no flags', () => {
+            expect(
+                convertQuery({
+                    name: { $excludes: 'bus' },
+                })
+            ).toEqual({
+                bool: {
+                    must_not: {
+                        wildcard: {
+                            name: {
+                                value: '*bus*',
+                            },
+                        },
+                    },
+                },
+            });
+        });
+
+        test('with "i" flag', () => {
+            expect(
+                convertQuery({
+                    name: { $excludes: 'bus', $options: 'i' },
+                })
+            ).toEqual({
+                bool: {
+                    must_not: {
+                        wildcard: {
+                            name: {
+                                value: '*bus*',
+                                case_insensitive: true,
+                            },
+                        },
+                    },
+                },
+            });
+        });
+    });
+
     describe('supports $prefix operator', () => {
         test('with no flags', () => {
             expect(

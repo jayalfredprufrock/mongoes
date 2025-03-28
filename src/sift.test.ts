@@ -67,6 +67,48 @@ describe('sift()', () => {
         });
     });
 
+    describe('$includes custom operation', () => {
+        test('Matches partial correctly, trimming whitespace.', () => {
+            expect(sift({ name: { $includes: ' ve' } })({ name: 'Ravel ' })).toBe(true);
+            expect(sift({ name: { $includes: ' ri' } })({ name: 'Ravel' })).toBe(false);
+        });
+
+        test('Matches entire phrase correctly, trimming whitespace.', () => {
+            expect(sift({ name: { $includes: ' Ravel' } })({ name: 'Ravel ' })).toBe(true);
+            expect(sift({ name: { $includes: 'Maurice' } })({ name: 'Ravel' })).toBe(false);
+        });
+
+        test('Case sensitive by default', () => {
+            expect(sift({ name: { $includes: 'Ravel' } })({ name: 'ravel' })).toBe(false);
+        });
+
+        test('Supports case-insensitive option flag', () => {
+            expect(sift({ name: { $includes: 'Rav', $options: '' } })({ name: 'ravel' })).toBe(false);
+            expect(sift({ name: { $includes: 'Rav', $options: 'i' } })({ name: 'ravel' })).toBe(true);
+        });
+    });
+
+    describe('$excludes custom operation', () => {
+        test('Matches partial correctly, trimming whitespace.', () => {
+            expect(sift({ name: { $excludes: ' ve' } })({ name: 'Ravel ' })).toBe(false);
+            expect(sift({ name: { $excludes: ' ri' } })({ name: 'Ravel' })).toBe(true);
+        });
+
+        test('Matches entire phrase correctly, trimming whitespace.', () => {
+            expect(sift({ name: { $excludes: ' Ravel' } })({ name: 'Ravel ' })).toBe(false);
+            expect(sift({ name: { $excludes: 'Maurice' } })({ name: 'Ravel' })).toBe(true);
+        });
+
+        test('Case sensitive by default', () => {
+            expect(sift({ name: { $excludes: 'Ravel' } })({ name: 'ravel' })).toBe(true);
+        });
+
+        test('Supports case-insensitive option flag', () => {
+            expect(sift({ name: { $excludes: 'Rav', $options: '' } })({ name: 'ravel' })).toBe(true);
+            expect(sift({ name: { $excludes: 'Rav', $options: 'i' } })({ name: 'ravel' })).toBe(false);
+        });
+    });
+
     describe('$prefix custom operation', () => {
         test('Matches correctly without, trimming whitespace.', () => {
             expect(sift({ name: { $prefix: 'Maurice' } })({ name: ' Maurice Ravel ' })).toBe(true);

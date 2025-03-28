@@ -32,6 +32,20 @@ export const siftCustomOperations: Record<string, OperationCreator<any>> = {
 
         return createEqualsOperation((value: unknown) => !regex.test(String(value).trim()), ownerQuery, options);
     },
+    $includes(params, ownerQuery, options) {
+        const caseInsensitive = ownerQuery.$options?.toString().includes('i');
+        const exp = escapeRegex(String(params).trim());
+        const regex = new RegExp(`.*${exp}.*`, caseInsensitive ? 'si' : 's');
+
+        return createEqualsOperation((value: unknown) => regex.test(String(value).trim()), ownerQuery, options);
+    },
+    $excludes(params, ownerQuery, options) {
+        const caseInsensitive = ownerQuery.$options?.toString().includes('i');
+        const exp = escapeRegex(String(params).trim());
+        const regex = new RegExp(`.*${exp}.*`, caseInsensitive ? 'si' : 's');
+
+        return createEqualsOperation((value: unknown) => !regex.test(String(value).trim()), ownerQuery, options);
+    },
     $prefix(params, ownerQuery, options) {
         const caseInsensitive = ownerQuery.$options?.toString().includes('i');
         let exp = String(params).trim();
