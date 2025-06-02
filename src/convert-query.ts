@@ -1,6 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-const negatedOps: Record<string, string> = { $ne: '$eq', $nin: '$in', $unlike: '$like', $nempty: '$empty', $excludes: '$includes' };
+const negatedOps: Record<string, string> = {
+    $ne: '$eq',
+    $nin: '$in',
+    $unlike: '$like',
+    $nempty: '$empty',
+    $excludes: '$includes',
+    $none: '$all',
+};
 const boolOps: Record<string, string> = { $and: 'must', $or: 'should', $nor: 'must_not' };
 
 type CustomOperator = (field: string, operand: any, options?: any) => any;
@@ -84,27 +91,49 @@ export const expandNestedAllExps = (query: any): any => {
     const q: any = {};
     Object.entries<any>(query).forEach(([nestedKey, nestedExp]) => {
         if (nestedExp.$elemMatch) {
-            const expandedExps: any[] = [];
+            const expandedAllExps: any[] = [];
+            const expandedNoneExps: any[] = [];
             const nonExpandedExps: any = {};
             Object.entries<any>(nestedExp.$elemMatch).forEach(([field, exp]) => {
-                if (exp && typeof exp === 'object' && Array.isArray(exp.$all)) {
-                    expandedExps.push(...exp.$all.map((value: any) => ({ [field]: value })));
+                if (exp && typeof exp === 'object') {
+                    if (Array.isArray(exp.$all)) {
+                        expandedAllExps.push(...exp.$all.map((value: any) => ({ [field]: value })));
+                    }
+                    if (Array.isArray(exp.$none)) {
+                        expandedNoneExps.push(...exp.$none.map((value: any) => ({ [field]: value })));
+                    }
                 } else {
                     nonExpandedExps[field] = exp;
                 }
             });
 
-            if (expandedExps.length) {
+            if (expandedAllExps.length) {
                 if (!q.$and) {
                     q.$and = [];
                 }
-                expandedExps.forEach(exp => {
+                expandedAllExps.forEach(exp => {
                     q.$and.push({
                         [nestedKey]: {
                             $elemMatch: { ...exp, ...nonExpandedExps },
                         },
                     });
                 });
+            }
+
+            if (expandedNoneExps.length) {
+                if (!q.$nor) {
+                    q.$nor = [];
+                }
+                expandedNoneExps.forEach(exp => {
+                    q.$nor.push({
+                        [nestedKey]: {
+                            $elemMatch: { ...exp, ...nonExpandedExps },
+                        },
+                    });
+                });
+            }
+
+            if (expandedAllExps.length || expandedNoneExps.length) {
                 return;
             }
         }

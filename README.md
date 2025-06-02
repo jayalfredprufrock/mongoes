@@ -58,6 +58,7 @@ OOTB, mongoes includes a few operators that aren't a part of the MongoDB query s
 -   `$ids` - Maps to ES "ids" query. The operand is an array of document \_ids. The field name is not used when constructing the ES
     query, however it is used to specify a document-level id field for supporting Sift queries.
 -   `$empty` (`$nempty`) - Works just like `$exists`, but does not consider empty strings (after trimming) to exist.
+-   `$none` - the opposite of `$all`
 
 Additionally, users can create their own custom operations by including an object of operator functions:
 
@@ -125,7 +126,7 @@ sifter({ name: 'Mongoes' }); // true
 -   `$elemMatch` translates to a nested query
 -   `$or` queries always translate into `should` + `minimum_should_match=1`. This allows adjacent $and operators (including implicit)
     to work as expected.
--   `$all` operator within `$elemMatch` is converted to `must` + multiple `term` expressions.
+-   `$all` / `$none` operators within `$elemMatch` are converted to `must` / `must_not` + multiple `term` expressions.
 -   No guarantee about the syntactical stability of queries to allow future optimizations without a major version bump
 -   Some attempt made to produce compact representations: e.g. removes redundant `{ bool: { must: { bool: exp }}}`
 -   Queries involving regular expressions or wildcards (i.e. `$regex`, `$like`, `$prefix`, etc. ) should be used sparingly since

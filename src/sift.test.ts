@@ -165,4 +165,28 @@ describe('sift()', () => {
             expect(sift({ name: { $nempty: false } })({ name: ' ' })).toBe(true);
         });
     });
+
+    describe('$none custom operation', () => {
+        test('Matches correctly when arrays have no overlap', () => {
+            expect(sift({ keys: { $none: ['C', 'C#'] } })({ keys: ['A', 'Ab'] })).toBe(true);
+        });
+
+        test('Does not match when arrays have some overlap', () => {
+            expect(sift({ keys: { $none: ['C', 'C#'] } })({ keys: ['A', 'Ab', 'C'] })).toBe(false);
+        });
+
+        test('Does not match when arrays are the same', () => {
+            expect(sift({ keys: { $none: ['C', 'C#'] } })({ keys: ['C', 'C#'] })).toBe(false);
+        });
+
+        test('Matches when operand/value is scalar and not not present', () => {
+            expect(sift({ keys: { $none: ['C', 'C#'] } })({ keys: 'A' })).toBe(true);
+            expect(sift({ keys: { $none: 'C' } })({ keys: ['A', 'Ab'] })).toBe(true);
+        });
+
+        test('Does not match when operand/value is scalar and present', () => {
+            expect(sift({ keys: { $none: ['C', 'C#'] } })({ keys: 'C#' })).toBe(false);
+            expect(sift({ keys: { $none: 'C' } })({ keys: ['C#', 'C'] })).toBe(false);
+        });
+    });
 });

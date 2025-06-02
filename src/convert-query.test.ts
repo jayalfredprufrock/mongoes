@@ -86,6 +86,18 @@ describe('convertQuery()', () => {
             });
         });
 
+        test('$none', () => {
+            expect(convertQuery({ works: { $none: ['Bolero', 'La Valse'] } })).toEqual({
+                bool: {
+                    must_not: {
+                        terms_set: {
+                            works: { terms: ['Bolero', 'La Valse'], minimum_should_match_script: { source: 'params.num_terms' } },
+                        },
+                    },
+                },
+            });
+        });
+
         test('$elemMatch', () => {
             expect(convertQuery({ works: { $elemMatch: { key: 'C', bpm: 130 } } })).toEqual({
                 bool: {
@@ -170,8 +182,42 @@ describe('convertQuery()', () => {
             });
         });
 
-        test('$all within $elemMatch with additional expressions', () => {
-            expect(convertQuery({ name: { $eq: 'Ravel' }, works: { $elemMatch: { bpm: 130, keys: { $all: ['C', 'C#'] } } } })).toEqual({
+        test('$none within $elemMatch', () => {
+            expect(convertQuery({ works: { $elemMatch: { bpm: 130, keys: { $none: ['C', 'C#'] } } } })).toEqual({
+                bool: {
+                    must_not: [
+                        {
+                            nested: {
+                                path: 'works',
+                                query: {
+                                    bool: {
+                                        must: [{ term: { 'works.keys': 'C' } }, { term: { 'works.bpm': 130 } }],
+                                    },
+                                },
+                            },
+                        },
+                        {
+                            nested: {
+                                path: 'works',
+                                query: {
+                                    bool: {
+                                        must: [{ term: { 'works.keys': 'C#' } }, { term: { 'works.bpm': 130 } }],
+                                    },
+                                },
+                            },
+                        },
+                    ],
+                },
+            });
+        });
+
+        test('$all/$none within $elemMatch with additional expressions', () => {
+            expect(
+                convertQuery({
+                    name: { $eq: 'Ravel' },
+                    works: { $elemMatch: { bpm: 130, keys: { $all: ['C', 'C#'], $none: ['A', 'Ab'] } } },
+                })
+            ).toEqual({
                 bool: {
                     must: [
                         { term: { name: 'Ravel' } },
@@ -191,6 +237,28 @@ describe('convertQuery()', () => {
                                 query: {
                                     bool: {
                                         must: [{ term: { 'works.keys': 'C#' } }, { term: { 'works.bpm': 130 } }],
+                                    },
+                                },
+                            },
+                        },
+                    ],
+                    must_not: [
+                        {
+                            nested: {
+                                path: 'works',
+                                query: {
+                                    bool: {
+                                        must: [{ term: { 'works.keys': 'A' } }, { term: { 'works.bpm': 130 } }],
+                                    },
+                                },
+                            },
+                        },
+                        {
+                            nested: {
+                                path: 'works',
+                                query: {
+                                    bool: {
+                                        must: [{ term: { 'works.keys': 'Ab' } }, { term: { 'works.bpm': 130 } }],
                                     },
                                 },
                             },
