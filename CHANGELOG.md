@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 0.8.0
+
+### Minor Changes
+
+-   3e05758: feat: new $none operator
+
 ## 0.7.1
 
 ### Patch Changes
