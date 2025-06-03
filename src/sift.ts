@@ -94,20 +94,6 @@ export const siftCustomOperations: Record<string, OperationCreator<any>> = {
             options
         );
     },
-    $none(params, ownerQuery, options) {
-        return createEqualsOperation(
-            (value: unknown, key: string | number) => {
-                if (typeof key === 'number') return false;
-
-                const items = [params].flat();
-                const arrayValue = [value].flat();
-
-                return !arrayValue.some(val => items.includes(val));
-            },
-            ownerQuery,
-            options
-        );
-    },
 };
 
 export const sift: typeof originalSift = (query, options) => originalSift(query, { ...options, operations: siftCustomOperations });

@@ -6,7 +6,6 @@ const negatedOps: Record<string, string> = {
     $unlike: '$like',
     $nempty: '$empty',
     $excludes: '$includes',
-    $none: '$all',
 };
 const boolOps: Record<string, string> = { $and: 'must', $or: 'should', $nor: 'must_not' };
 
@@ -21,23 +20,21 @@ export const isOperator = (op: string): op is `$${string}` => {
 };
 
 export const convertQuery = (query: any, config?: ConvertQueryConfig, pathPrefix = '', inBool = false): any => {
-    const expandedQuery = expandNestedAllExps(query);
-
     const esQuery: any = {};
-    for (const key in expandedQuery) {
+    for (const key in query) {
         if (boolOps[key]) {
-            expandedQuery[key].forEach((q: any) => {
+            query[key].forEach((q: any) => {
                 addBoolQuery(esQuery, boolOps[key] as any, convertQuery(q, config, pathPrefix, true));
             });
         } else if (key === '$not') {
-            addBoolQuery(esQuery, 'must_not', convertQuery(expandedQuery.$not, config, pathPrefix, true));
-        } else if (expandedQuery[key] instanceof Object) {
-            const { $options, ...operatorAndOperand } = expandedQuery[key];
+            addBoolQuery(esQuery, 'must_not', convertQuery(query.$not, config, pathPrefix, true));
+        } else if (query[key] instanceof Object) {
+            const { $options, ...operatorAndOperand } = query[key];
             const [operator = '', operand] = Object.entries(operatorAndOperand)[0] ?? [];
             const boolType = negatedOps[operator] ? 'must_not' : 'must';
             addBoolQuery(esQuery, boolType, convertExp(`${pathPrefix}${key}`, negatedOps[operator] ?? operator, operand, $options, config));
         } else if (key[0] !== '$') {
-            addBoolQuery(esQuery, 'must', convertExp(`${pathPrefix}${key}`, '$eq', expandedQuery[key], undefined, config));
+            addBoolQuery(esQuery, 'must', convertExp(`${pathPrefix}${key}`, '$eq', query[key], undefined, config));
         }
     }
 
@@ -69,78 +66,6 @@ export const addBoolQuery = (query: any, type: 'must' | 'should' | 'must_not', e
     if (type === 'should') {
         query.bool.minimum_should_match = 1;
     }
-};
-
-/*
-Hacky way to allow $all operator to work as expected
-when used within $elemMatch queries. It looks for queries
-of this form:
-
-{ works: { $elemMatch: { bpm: 130, keys: { $all: ["C","C#"] } } } }
-
-and converts them into an expanded form:
-
-{
-    $and: [
-        { works: { $elemMatch: { bpm: 130, keys: "C" } } },
-        { works: { $elemMatch: { bpm: 130, keys: "C#" } } }
-    ]
-}
-*/
-export const expandNestedAllExps = (query: any): any => {
-    const q: any = {};
-    Object.entries<any>(query).forEach(([nestedKey, nestedExp]) => {
-        if (nestedExp.$elemMatch) {
-            const expandedAllExps: any[] = [];
-            const expandedNoneExps: any[] = [];
-            const nonExpandedExps: any = {};
-            Object.entries<any>(nestedExp.$elemMatch).forEach(([field, exp]) => {
-                if (exp && typeof exp === 'object') {
-                    if (Array.isArray(exp.$all)) {
-                        expandedAllExps.push(...exp.$all.map((value: any) => ({ [field]: value })));
-                    }
-                    if (Array.isArray(exp.$none)) {
-                        expandedNoneExps.push(...exp.$none.map((value: any) => ({ [field]: value })));
-                    }
-                } else {
-                    nonExpandedExps[field] = exp;
-                }
-            });
-
-            if (expandedAllExps.length) {
-                if (!q.$and) {
-                    q.$and = [];
-                }
-                expandedAllExps.forEach(exp => {
-                    q.$and.push({
-                        [nestedKey]: {
-                            $elemMatch: { ...exp, ...nonExpandedExps },
-                        },
-                    });
-                });
-            }
-
-            if (expandedNoneExps.length) {
-                if (!q.$nor) {
-                    q.$nor = [];
-                }
-                expandedNoneExps.forEach(exp => {
-                    q.$nor.push({
-                        [nestedKey]: {
-                            $elemMatch: { ...exp, ...nonExpandedExps },
-                        },
-                    });
-                });
-            }
-
-            if (expandedAllExps.length || expandedNoneExps.length) {
-                return;
-            }
-        }
-        q[nestedKey] = nestedExp;
-    });
-
-    return q;
 };
 
 export const convertExp = (field: string, operator: string, operand: any, options?: any, config?: ConvertQueryConfig): any => {
