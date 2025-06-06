@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 1.0.1
+
+### Patch Changes
+
+-   aaf33a8: fix: expandNestedArrayExps should expand nested and compound expressions
+
 ## 1.0.0
 
 ### Major Changes
