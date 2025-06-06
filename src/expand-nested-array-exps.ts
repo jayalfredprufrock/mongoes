@@ -26,7 +26,11 @@ so that the following document would match
 export const expandNestedArrayExps = (query: any): any => {
     const q: any = {};
     Object.entries<any>(query).forEach(([nestedKey, nestedExp]) => {
-        if (nestedExp.$elemMatch) {
+        if (Array.isArray(nestedExp) && (nestedKey === '$and' || nestedKey === '$or' || nestedKey === '$nor')) {
+            q[nestedKey] = nestedExp.map(exp => expandNestedArrayExps(exp));
+        } else if (nestedKey === '$not') {
+            q[nestedKey] = expandNestedArrayExps(nestedExp);
+        } else if (nestedExp.$elemMatch) {
             const expandedAllExps: any[] = [];
             const expandedNinExps: any[] = [];
             const nonExpandedExps: any = {};
@@ -72,8 +76,11 @@ export const expandNestedArrayExps = (query: any): any => {
             if (expandedAllExps.length || expandedNinExps.length) {
                 return;
             }
+
+            q[nestedKey] = { $elemMatch: expandNestedArrayExps(nestedExp.$elemMatch) };
+        } else {
+            q[nestedKey] = nestedExp;
         }
-        q[nestedKey] = nestedExp;
     });
 
     return q;
