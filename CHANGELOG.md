@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 1.0.2
+
+### Patch Changes
+
+-   0f665d9: fix: allow sift utils to work in ESM context
+
 ## 1.0.1
 
 ### Patch Changes
