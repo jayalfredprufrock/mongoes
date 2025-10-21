@@ -1,4 +1,4 @@
-import originalSift, { createEqualsOperation } from 'sift';
+import * as s from 'sift';
 import type { OperationCreator } from 'sift/lib/core';
 
 const regexTokens = ['-', '[', ']', '/', '{', '}', '(', ')', '*', '+', '?', '.', '\\', '^', '$', '|'] as const;
@@ -21,7 +21,7 @@ export const siftCustomOperations: Record<string, OperationCreator<any>> = {
         const exp = escapeRegex(String(params).trim().replaceAll('%', '*'), ['*', '?']).replaceAll('*', '.*').replaceAll('?', '.');
         const regex = new RegExp(exp, caseInsensitive ? 'si' : 's');
 
-        return createEqualsOperation((value: unknown) => regex.test(String(value).trim()), ownerQuery, options);
+        return s.createEqualsOperation((value: unknown) => regex.test(String(value).trim()), ownerQuery, options);
     },
     $unlike(params, ownerQuery, options) {
         const caseInsensitive = ownerQuery.$options?.toString().includes('i');
@@ -30,21 +30,21 @@ export const siftCustomOperations: Record<string, OperationCreator<any>> = {
         const exp = escapeRegex(String(params).trim().replaceAll('%', '*'), ['*', '?']).replaceAll('*', '.*').replaceAll('?', '.');
         const regex = new RegExp(exp, caseInsensitive ? 'si' : 's');
 
-        return createEqualsOperation((value: unknown) => !regex.test(String(value).trim()), ownerQuery, options);
+        return s.createEqualsOperation((value: unknown) => !regex.test(String(value).trim()), ownerQuery, options);
     },
     $includes(params, ownerQuery, options) {
         const caseInsensitive = ownerQuery.$options?.toString().includes('i');
         const exp = escapeRegex(String(params).trim());
         const regex = new RegExp(`.*${exp}.*`, caseInsensitive ? 'si' : 's');
 
-        return createEqualsOperation((value: unknown) => regex.test(String(value).trim()), ownerQuery, options);
+        return s.createEqualsOperation((value: unknown) => regex.test(String(value).trim()), ownerQuery, options);
     },
     $excludes(params, ownerQuery, options) {
         const caseInsensitive = ownerQuery.$options?.toString().includes('i');
         const exp = escapeRegex(String(params).trim());
         const regex = new RegExp(`.*${exp}.*`, caseInsensitive ? 'si' : 's');
 
-        return createEqualsOperation((value: unknown) => !regex.test(String(value).trim()), ownerQuery, options);
+        return s.createEqualsOperation((value: unknown) => !regex.test(String(value).trim()), ownerQuery, options);
     },
     $prefix(params, ownerQuery, options) {
         const caseInsensitive = ownerQuery.$options?.toString().includes('i');
@@ -52,7 +52,7 @@ export const siftCustomOperations: Record<string, OperationCreator<any>> = {
         if (caseInsensitive) {
             exp = exp.toLowerCase();
         }
-        return createEqualsOperation(
+        return s.createEqualsOperation(
             (value: unknown) => {
                 let val = String(value).trim();
                 if (caseInsensitive) {
@@ -65,7 +65,7 @@ export const siftCustomOperations: Record<string, OperationCreator<any>> = {
         );
     },
     $ids(params, ownerQuery, options) {
-        return createEqualsOperation(
+        return s.createEqualsOperation(
             (value: unknown) => {
                 const ids = [params].flat().map(String);
                 return ids.includes(String(value));
@@ -75,7 +75,7 @@ export const siftCustomOperations: Record<string, OperationCreator<any>> = {
         );
     },
     $empty(params, ownerQuery, options) {
-        return createEqualsOperation(
+        return s.createEqualsOperation(
             (value: unknown) => {
                 const isEmpty = value === undefined || (typeof value === 'string' && !value.trim());
                 return params === isEmpty;
@@ -85,7 +85,7 @@ export const siftCustomOperations: Record<string, OperationCreator<any>> = {
         );
     },
     $nempty(params, ownerQuery, options) {
-        return createEqualsOperation(
+        return s.createEqualsOperation(
             (value: unknown) => {
                 const isEmpty = value === undefined || (typeof value === 'string' && !value.trim());
                 return params !== isEmpty;
@@ -95,5 +95,7 @@ export const siftCustomOperations: Record<string, OperationCreator<any>> = {
         );
     },
 };
+
+const originalSift = s.default;
 
 export const sift: typeof originalSift = (query, options) => originalSift(query, { ...options, operations: siftCustomOperations });
