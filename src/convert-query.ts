@@ -102,6 +102,20 @@ export const convertExp = (field: string, operator: string, operand: any, option
             return { range: { [field]: { [operator.slice(1)]: operand } } };
         }
 
+        case '$between': {
+            if (!Array.isArray(operand) || operand.length !== 2) {
+                throw new Error('$between operator expects operand to be a tuple of length two.');
+            }
+
+            const { exclusive = false } = options && typeof options === 'object' ? options : {};
+
+            const [min, max] = operand;
+            const minOp = exclusive === true || exclusive === 'min' ? 'gt' : 'gte';
+            const maxOp = exclusive === true || exclusive === 'max' ? 'lt' : 'lte';
+
+            return { range: { [field]: { [minOp]: min, [maxOp]: max } } };
+        }
+
         case '$elemMatch': {
             return {
                 nested: {

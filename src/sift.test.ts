@@ -165,4 +165,88 @@ describe('sift()', () => {
             expect(sift({ name: { $nempty: false } })({ name: ' ' })).toBe(true);
         });
     });
+
+    describe('$between custom operation', () => {
+        test('Matches correctly for numbers (inclusive by default)', () => {
+            expect(sift({ value: { $between: [1, 5] } })({ value: 3 })).toBe(true);
+            expect(sift({ value: { $between: [1, 5] } })({ value: 1 })).toBe(true);
+            expect(sift({ value: { $between: [1, 5] } })({ value: 5 })).toBe(true);
+            expect(sift({ value: { $between: [1, 5] } })({ value: 0 })).toBe(false);
+            expect(sift({ value: { $between: [1, 5] } })({ value: 10 })).toBe(false);
+        });
+
+        test('Handles exclusive=true option', () => {
+            expect(sift({ value: { $between: [1, 5], $options: { exclusive: true } } })({ value: 3 })).toBe(true);
+            expect(sift({ value: { $between: [1, 5], $options: { exclusive: true } } })({ value: 1 })).toBe(false);
+            expect(sift({ value: { $between: [1, 5], $options: { exclusive: true } } })({ value: 5 })).toBe(false);
+        });
+
+        test('Handles exclusive=min option', () => {
+            expect(sift({ value: { $between: [1, 5], $options: { exclusive: 'min' } } })({ value: 3 })).toBe(true);
+            expect(sift({ value: { $between: [1, 5], $options: { exclusive: 'min' } } })({ value: 1 })).toBe(false);
+            expect(sift({ value: { $between: [1, 5], $options: { exclusive: 'min' } } })({ value: 5 })).toBe(true);
+        });
+
+        test('Handles exclusive=max option', () => {
+            expect(sift({ value: { $between: [1, 5], $options: { exclusive: 'max' } } })({ value: 3 })).toBe(true);
+            expect(sift({ value: { $between: [1, 5], $options: { exclusive: 'max' } } })({ value: 1 })).toBe(true);
+            expect(sift({ value: { $between: [1, 5], $options: { exclusive: 'max' } } })({ value: 5 })).toBe(false);
+        });
+
+        test('Matches correctly for strings', () => {
+            expect(sift({ value: { $between: ['bravo', 'delta'] } })({ value: 'charlie' })).toBe(true);
+            expect(sift({ value: { $between: ['bravo', 'delta'] } })({ value: 'bravo' })).toBe(true);
+            expect(sift({ value: { $between: ['bravo', 'delta'] } })({ value: 'delta' })).toBe(true);
+            expect(sift({ value: { $between: ['bravo', 'delta'] } })({ value: 'alpha' })).toBe(false);
+            expect(sift({ value: { $between: ['bravo', 'delta'] } })({ value: 'echo' })).toBe(false);
+        });
+
+        test('Matches correctly for dates', () => {
+            const now = Date.now();
+            expect(sift({ value: { $between: ['now-1m', 'now+1m'] } })({ value: now })).toBe(true);
+            expect(sift({ value: { $between: ['now-1m', 'now+1m'] } })({ value: now - 1000 * 60 * 2 })).toBe(false);
+            expect(sift({ value: { $between: ['now-1m', 'now+1m'] } })({ value: now + 1000 * 60 * 2 })).toBe(false);
+        });
+    });
+
+    describe('overridden comparator operations ($gt, $gte, $lt, $lte)', () => {
+        test('retains normal $lt behavior', () => {
+            const sifter = sift({ value: { $lt: 0 } });
+            expect(sifter({ value: -1 })).toBe(true);
+            expect(sifter({ value: 0 })).toBe(false);
+            expect(sifter({ value: 1 })).toBe(false);
+        });
+
+        test('retains normal $lte behavior', () => {
+            const sifter = sift({ value: { $lte: 0 } });
+            expect(sifter({ value: -1 })).toBe(true);
+            expect(sifter({ value: 0 })).toBe(true);
+            expect(sifter({ value: 1 })).toBe(false);
+        });
+
+        test('retains normal $gt behavior', () => {
+            const sifter = sift({ value: { $gt: 0 } });
+            expect(sifter({ value: 1 })).toBe(true);
+            expect(sifter({ value: 0 })).toBe(false);
+            expect(sifter({ value: -11 })).toBe(false);
+        });
+
+        test('retains normal $gte behavior', () => {
+            const sifter = sift({ value: { $gte: 0 } });
+            expect(sifter({ value: 1 })).toBe(true);
+            expect(sifter({ value: 0 })).toBe(true);
+            expect(sifter({ value: -11 })).toBe(false);
+        });
+
+        test('compares dates properly, including date math', () => {
+            const now = new Date();
+            expect(sift({ value: { $lt: now.getTime() } })({ value: now })).toBe(false);
+            expect(sift({ value: { $lte: now.getTime() } })({ value: now })).toBe(true);
+            expect(sift({ value: { $lt: 'now+1h' } })({ value: now.getTime() })).toBe(true);
+            expect(sift({ value: { $gt: 'now+1h' } })({ value: now.getTime() })).toBe(false);
+            expect(sift({ value: { $lt: 'now-1h' } })({ value: now })).toBe(false);
+            expect(sift({ value: { $gt: 'now-1h' } })({ value: now })).toBe(true);
+            expect(sift({ value: { $gt: '2025-12-30||/y' } })({ value: '2026-01-01' })).toBe(true);
+        });
+    });
 });

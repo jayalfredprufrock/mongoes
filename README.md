@@ -42,7 +42,8 @@ const query = convertQuery({
 
 ## Built-in Operators
 
-See [MongoDb docs](https://www.mongodb.com/docs/manual/reference/operator/query/) for a list of operators and options. Also check out the [sift.js](https://github.com/crcn/sift.js#readme) library, which provides support for evaluating/filtering in-memory objects using this same mongo-style syntax. A major motiviation for MongoES was to have a single filtering/querying syntax that could be used both against ES indexes and in-memory objects.
+See [MongoDb docs](https://www.mongodb.com/docs/manual/reference/operator/query/) for a list of operators and options. Also check out the [sift.js](https://github.com/crcn/sift.js#readme) library, which provides support for evaluating/filtering in-memory objects using this same mongo-style syntax. A major motiviation for MongoES was to have a single filtering/querying syntax that could be used both against ES indexes and in-memory objects. This does come with caveats, as elasticsearch often relies on field mappings
+to perform coercion intelligently.
 
 ## Custom Operators
 
@@ -58,6 +59,8 @@ OOTB, mongoes includes a few operators that aren't a part of the MongoDB query s
 -   `$ids` - Maps to ES "ids" query. The operand is an array of document \_ids. The field name is not used when constructing the ES
     query, however it is used to specify a document-level id field for supporting Sift queries.
 -   `$empty` (`$nempty`) - Works just like `$exists`, but does not consider empty strings (after trimming) to exist.
+-   `$between` - Shorhand for combining < and >. The operand is a tuple, `[min, max]`. By default it is inclusive. Use `$options: { exclusive: true}`
+    perform an exclusive comparison. Pass `min` or `max` instead of `true` to control each operand individually.
 
 Additionally, users can create their own custom operations by including an object of operator functions:
 
@@ -87,7 +90,7 @@ const query = convertQuery({ name: { $fuzz: 'Mangeos', $options: { fuzziness: 2 
 
 ### Sift Filters
 
-For those using this library alongside [sift.js](https://github.com/crcn/sift.js#readme), mongoes exports a set of custom sift.js operators providing support for the custom operators this library ships with.
+For those using this library alongside [sift.js](https://github.com/crcn/sift.js#readme), mongoes exports a set of custom sift.js operators providing support for the custom operators this library ships with. It also overrides the comparative operators so that they behave more like elasticsearch, including support for date math.
 
 To use, begin by making sure sift.js is installed:
 
@@ -114,6 +117,19 @@ import { siftCustomOperations } from '@jayalfredprufrock/mongoes/sift';
 const sifter = sift({ name: { $like: 'M?ngoes' } }, { operations: siftCustomOperations });
 
 sifter({ name: 'Mongoes' }); // true
+```
+
+### Date Math
+
+This library does its best to reasonably replicate elasticsearch behavior when working with date range queries, including
+supporting date math expressions in the filter operand. Without explicit field mappings though, there are situations where
+coercion rules cannot be reliably applied. Do not rely on having perfectly matched behavior unless you have explicitly tested
+your specific expression requirements.
+
+```ts
+const sifter = sift({ createdAt: { $gt: 'now-1y/d' } });
+
+sifter({ createdAt: Date.now() }); //true
 ```
 
 ## Notes

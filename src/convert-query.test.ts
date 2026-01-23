@@ -61,6 +61,38 @@ describe('convertQuery()', () => {
         });
     });
 
+    describe('supports range $between operator', () => {
+        test('with default options (inclusive)', () => {
+            expect(convertQuery({ age: { $between: [30, 40] } })).toEqual({
+                bool: { must: { range: { age: { gte: 30, lte: 40 } } } },
+            });
+        });
+
+        test('with explicit inclusive', () => {
+            expect(convertQuery({ age: { $between: [30, 40], $options: { exclusive: false } } })).toEqual({
+                bool: { must: { range: { age: { gte: 30, lte: 40 } } } },
+            });
+        });
+
+        test('with explicit exclusive', () => {
+            expect(convertQuery({ age: { $between: [30, 40], $options: { exclusive: true } } })).toEqual({
+                bool: { must: { range: { age: { gt: 30, lt: 40 } } } },
+            });
+        });
+
+        test('with explicit exclusive min', () => {
+            expect(convertQuery({ age: { $between: [30, 40], $options: { exclusive: 'min' } } })).toEqual({
+                bool: { must: { range: { age: { gt: 30, lte: 40 } } } },
+            });
+        });
+
+        test('with explicit exclusive max', () => {
+            expect(convertQuery({ age: { $between: [30, 40], $options: { exclusive: 'max' } } })).toEqual({
+                bool: { must: { range: { age: { gte: 30, lt: 40 } } } },
+            });
+        });
+    });
+
     describe('supports array based operators', () => {
         test('$in', () => {
             expect(convertQuery({ works: { $in: ['Bolero', 'La Valse'] } })).toEqual({

@@ -1,5 +1,6 @@
 import * as s from 'sift';
 import type { OperationCreator } from 'sift/lib/core';
+import { coerceRangeOperands } from './coerce-range-operands';
 
 const regexTokens = ['-', '[', ']', '/', '{', '}', '(', ')', '*', '+', '?', '.', '\\', '^', '$', '|'] as const;
 type RegexToken = (typeof regexTokens)[number];
@@ -13,6 +14,9 @@ export const escapeRegex = (text: string, allowedTokens: RegexToken[] = []): str
     return text.replace(escape, '\\$&');
 };
 
+// if string
+// look for "now" or "||", if either is present, attempt parseDateMath()
+// -- else, pass string to
 export const siftCustomOperations: Record<string, OperationCreator<any>> = {
     $like(params, ownerQuery, options) {
         const caseInsensitive = ownerQuery.$options?.toString().includes('i');
@@ -89,6 +93,68 @@ export const siftCustomOperations: Record<string, OperationCreator<any>> = {
             (value: unknown) => {
                 const isEmpty = value === undefined || (typeof value === 'string' && !value.trim());
                 return params !== isEmpty;
+            },
+            ownerQuery,
+            options
+        );
+    },
+    $lt(params, ownerQuery, options) {
+        return s.createEqualsOperation(
+            (value: unknown) => {
+                const [fieldOp, filterOp] = coerceRangeOperands(value, params);
+                return fieldOp < filterOp;
+            },
+            ownerQuery,
+            options
+        );
+    },
+    $lte(params, ownerQuery, options) {
+        return s.createEqualsOperation(
+            (value: unknown) => {
+                const [fieldOp, filterOp] = coerceRangeOperands(value, params);
+                return fieldOp <= filterOp;
+            },
+            ownerQuery,
+            options
+        );
+    },
+    $gt(params, ownerQuery, options) {
+        return s.createEqualsOperation(
+            (value: unknown) => {
+                const [fieldOp, filterOp] = coerceRangeOperands(value, params);
+                return fieldOp > filterOp;
+            },
+            ownerQuery,
+            options
+        );
+    },
+    $gte(params, ownerQuery, options) {
+        return s.createEqualsOperation(
+            (value: unknown) => {
+                const [fieldOp, filterOp] = coerceRangeOperands(value, params);
+                return fieldOp >= filterOp;
+            },
+            ownerQuery,
+            options
+        );
+    },
+
+    $between(params, ownerQuery, options) {
+        const { exclusive = false } = typeof ownerQuery?.$options === 'object' ? ownerQuery.$options : {};
+        return s.createEqualsOperation(
+            (value: unknown) => {
+                const [fieldOp, filterOpMin] = coerceRangeOperands(value, params[0]);
+                const [_, filterOpMax] = coerceRangeOperands(value, params[1]);
+
+                if (exclusive === true) {
+                    return fieldOp > filterOpMin && fieldOp < filterOpMax;
+                } else if (exclusive === 'max') {
+                    return fieldOp >= filterOpMin && fieldOp < filterOpMax;
+                } else if (exclusive === 'min') {
+                    return fieldOp > filterOpMin && fieldOp <= filterOpMax;
+                } else {
+                    return fieldOp >= filterOpMin && fieldOp <= filterOpMax;
+                }
             },
             ownerQuery,
             options
