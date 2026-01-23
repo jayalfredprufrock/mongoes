@@ -109,6 +109,11 @@ describe('parseDateMath()', () => {
         expect(new Date(result).toISOString()).toBe('2024-02-15T12:34:00.000Z');
     });
 
+    test('rounds down to hour', () => {
+        expect(new Date(parseDateMath('now/h')).toISOString()).toBe('2024-02-15T12:00:00.000Z');
+        expect(new Date(parseDateMath('now/H')).toISOString()).toBe('2024-02-15T12:00:00.000Z');
+    });
+
     test('rounds down to day', () => {
         const result = parseDateMath('now/d');
         expect(new Date(result).toISOString()).toBe('2024-02-15T00:00:00.000Z');

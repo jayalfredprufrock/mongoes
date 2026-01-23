@@ -91,6 +91,11 @@ describe('convertQuery()', () => {
                 bool: { must: { range: { age: { gte: 30, lt: 40 } } } },
             });
         });
+
+        test('throws when filter operand is invalid', () => {
+            expect(() => convertQuery({ age: { $between: 3 } })).toThrow();
+            expect(() => convertQuery({ age: { $between: [3, 2, 1] } })).toThrow();
+        });
     });
 
     describe('supports array based operators', () => {
