@@ -59,8 +59,8 @@ OOTB, mongoes includes a few operators that aren't a part of the MongoDB query s
 -   `$ids` - Maps to ES "ids" query. The operand is an array of document \_ids. The field name is not used when constructing the ES
     query, however it is used to specify a document-level id field for supporting Sift queries.
 -   `$empty` (`$nempty`) - Works just like `$exists`, but does not consider empty strings (after trimming) to exist.
--   `$between` - Shorhand for combining < and >. The operand is a tuple, `[min, max]`. By default it is inclusive. Use `$options: { exclusive: true}`
-    perform an exclusive comparison. Pass `min` or `max` instead of `true` to control each operand individually.
+-   `$between` - Shorhand for combining `<` and `>`. The operand is a tuple, `[min, max]`. By default it is inclusive. Use `$options: { exclusive: true }`
+    to perform an exclusive comparison. Pass `min` or `max` instead of `true` to control each operand individually.
 
 Additionally, users can create their own custom operations by including an object of operator functions:
 
