@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 1.1.0
+
+### Minor Changes
+
+-   4b7c60b: feat: support for range query date math and $between op
+
 ## 1.0.2
 
 ### Patch Changes
