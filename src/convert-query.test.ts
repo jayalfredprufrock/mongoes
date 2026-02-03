@@ -1,4 +1,5 @@
 import { convertQuery } from './convert-query';
+import { earthRadiusInMiles } from './util';
 
 describe('convertQuery()', () => {
     describe('supports basic equality/existence operators', () => {
@@ -489,7 +490,7 @@ describe('convertQuery()', () => {
 
         test('with numeric $maxDistance treated as radians (mongodb default)', () => {
             expect(convertQuery({ location: { $near: [25, -71], $options: { maxDistance: 10 } } })).toEqual({
-                bool: { must: { geo_distance: { location: [25, -71], distance: `${10 * 3959}mi` } } },
+                bool: { must: { geo_distance: { location: [25, -71], distance: `${10 * earthRadiusInMiles}mi` } } },
             });
         });
 
