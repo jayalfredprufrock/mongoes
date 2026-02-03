@@ -468,6 +468,36 @@ describe('convertQuery()', () => {
         });
     });
 
+    describe('supports $near operator', () => {
+        test('with default options', () => {
+            expect(convertQuery({ location: { $near: [25, -71], $options: { maxDistance: '10mi' } } })).toEqual({
+                bool: { must: { geo_distance: { location: [25, -71], distance: '10mi' } } },
+            });
+        });
+
+        test('with type option', () => {
+            expect(convertQuery({ location: { $near: [25, -71], $options: { maxDistance: '10mi', distanceType: 'plane' } } })).toEqual({
+                bool: { must: { geo_distance: { location: [25, -71], distance: '10mi', distance_type: 'plane' } } },
+            });
+        });
+
+        test('with lat/lon operand', () => {
+            expect(convertQuery({ location: { $near: { lon: 25, lat: -71 }, $options: { maxDistance: '10mi' } } })).toEqual({
+                bool: { must: { geo_distance: { location: [25, -71], distance: '10mi' } } },
+            });
+        });
+
+        test('with numeric $maxDistance treated as radians (mongodb default)', () => {
+            expect(convertQuery({ location: { $near: [25, -71], $options: { maxDistance: 10 } } })).toEqual({
+                bool: { must: { geo_distance: { location: [25, -71], distance: `${10 * 3959}mi` } } },
+            });
+        });
+
+        test('throws when no distance option is passed', () => {
+            expect(() => convertQuery({ location: { $near: [25, -71] } })).toThrow();
+        });
+    });
+
     describe('supports custom operators', () => {
         const operators = {
             $fuzz: (field: string, operand: string, options?: { fuzziness?: number | 'AUTO' }) => {

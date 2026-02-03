@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { earthRadiusInMiles, locationToLatLonTuple } from './util';
+
 const negatedOps: Record<string, string> = {
     $ne: '$eq',
     $nin: '$in',
@@ -167,6 +169,19 @@ export const convertExp = (field: string, operator: string, operand: any, option
                 return { bool: { should: [notExp({ exists: { field } }), { term: { [field]: '' } }] } };
             }
             return { bool: { must: [{ exists: { field } }, notExp({ term: { [field]: '' } })] } };
+        }
+
+        case '$near': {
+            const { maxDistance, distanceType } = options && typeof options === 'object' ? options : {};
+            if (!maxDistance) {
+                throw new Error('$near operator requies a maxDistance option.');
+            }
+
+            const [lon, lat] = locationToLatLonTuple(operand);
+
+            const distance = typeof maxDistance === 'number' ? `${maxDistance * earthRadiusInMiles}mi` : maxDistance;
+
+            return { geo_distance: { [field]: [lon, lat], distance, distance_type: distanceType } };
         }
     }
 

@@ -1,6 +1,7 @@
 import * as s from 'sift';
 import type { OperationCreator } from 'sift/lib/core';
 import { coerceRangeOperands } from './coerce-range-operands';
+import { distanceToMiles, earthRadiusInMiles, locationToLatLonTuple, toRadians } from './util';
 
 const regexTokens = ['-', '[', ']', '/', '{', '}', '(', ')', '*', '+', '?', '.', '\\', '^', '$', '|'] as const;
 type RegexToken = (typeof regexTokens)[number];
@@ -155,6 +156,39 @@ export const siftCustomOperations: Record<string, OperationCreator<any>> = {
                 } else {
                     return fieldOp >= filterOpMin && fieldOp <= filterOpMax;
                 }
+            },
+            ownerQuery,
+            options
+        );
+    },
+
+    $near(params, ownerQuery, options) {
+        const { maxDistance, distanceType } = typeof ownerQuery?.$options === 'object' ? ownerQuery.$options : {};
+
+        const [filterLon, filterLat] = locationToLatLonTuple(params);
+        const maxDistanceInMiles = distanceToMiles(maxDistance);
+
+        return s.createEqualsOperation(
+            (value: unknown) => {
+                const [fieldLon, fieldLat] = locationToLatLonTuple(value);
+
+                let distanceInMiles: number;
+
+                const dx = toRadians(filterLon - fieldLon);
+                const dy = toRadians(filterLat - fieldLat);
+
+                if (distanceType === 'plane') {
+                    const avgLat = toRadians((fieldLat + filterLat) / 2);
+                    const x = dx * Math.cos(avgLat);
+                    distanceInMiles = Math.sqrt(x ** 2 + dy ** 2) * earthRadiusInMiles;
+                } else {
+                    const a =
+                        Math.sin(dy / 2) ** 2 + Math.cos(toRadians(fieldLat)) * Math.cos(toRadians(filterLat)) * Math.sin(dx / 2) ** 2;
+                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                    distanceInMiles = earthRadiusInMiles * c;
+                }
+
+                return distanceInMiles <= maxDistanceInMiles;
             },
             ownerQuery,
             options

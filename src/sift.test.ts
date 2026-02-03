@@ -1,4 +1,5 @@
 import { sift } from './sift';
+import { locationToLatLonTuple } from './util';
 
 describe('sift()', () => {
     describe('$like custom operation', () => {
@@ -206,6 +207,132 @@ describe('sift()', () => {
             expect(sift({ value: { $between: ['now-1m', 'now+1m'] } })({ value: now })).toBe(true);
             expect(sift({ value: { $between: ['now-1m', 'now+1m'] } })({ value: now - 1000 * 60 * 2 })).toBe(false);
             expect(sift({ value: { $between: ['now-1m', 'now+1m'] } })({ value: now + 1000 * 60 * 2 })).toBe(false);
+        });
+    });
+
+    describe('$near custom operation', () => {
+        // arc distance between downtown jax and bermuda triangle ~ 8206 miles (13207km, 2.07 earth radians)
+        // plane distance between downtown jax and jax beach ~ 15 miles (25km)
+        const jaxDowntown = { lon: -81.655647, lat: 30.332184 };
+        const jaxBeach = { lon: -81.3961, lat: 30.2841 };
+        const bermudaTriangle = { lon: 71, lat: 25 };
+
+        test('with default distance type (arc)', () => {
+            expect(
+                sift({ location: { $near: bermudaTriangle, $options: { maxDistance: '8207mi' } } })({
+                    location: jaxDowntown,
+                })
+            ).toBe(true);
+
+            expect(
+                sift({ location: { $near: bermudaTriangle, $options: { maxDistance: '8205mi' } } })({
+                    location: jaxDowntown,
+                })
+            ).toBe(false);
+
+            expect(
+                sift({ location: { $near: jaxBeach, $options: { maxDistance: '20mi' } } })({
+                    location: [jaxDowntown, bermudaTriangle],
+                })
+            ).toBe(true);
+        });
+
+        test('with explicit arc distance type', () => {
+            expect(
+                sift({ location: { $near: bermudaTriangle, $options: { maxDistance: '8207mi', distanceType: 'arc' } } })({
+                    location: jaxDowntown,
+                })
+            ).toBe(true);
+
+            expect(
+                sift({ location: { $near: bermudaTriangle, $options: { maxDistance: '8205mi', distanceType: 'arc' } } })({
+                    location: jaxDowntown,
+                })
+            ).toBe(false);
+        });
+
+        test('with explicit plane distance type', () => {
+            expect(
+                sift({ location: { $near: jaxBeach, $options: { maxDistance: '16mi', distanceType: 'plane' } } })({
+                    location: jaxDowntown,
+                })
+            ).toBe(true);
+
+            expect(
+                sift({ location: { $near: jaxBeach, $options: { maxDistance: '14mi', distanceType: 'plane' } } })({
+                    location: jaxDowntown,
+                })
+            ).toBe(false);
+        });
+
+        test('supports lon/lat tuples (in query)', () => {
+            expect(
+                sift({ location: { $near: locationToLatLonTuple(bermudaTriangle), $options: { maxDistance: '8207mi' } } })({
+                    location: jaxDowntown,
+                })
+            ).toBe(true);
+
+            expect(
+                sift({ location: { $near: locationToLatLonTuple(bermudaTriangle), $options: { maxDistance: '8205mi' } } })({
+                    location: jaxDowntown,
+                })
+            ).toBe(false);
+        });
+
+        test('handles units correctly', () => {
+            expect(
+                sift({ location: { $near: bermudaTriangle, $options: { maxDistance: '8207miles' } } })({
+                    location: jaxDowntown,
+                })
+            ).toBe(true);
+
+            expect(
+                sift({ location: { $near: bermudaTriangle, $options: { maxDistance: '8205miles' } } })({
+                    location: jaxDowntown,
+                })
+            ).toBe(false);
+
+            expect(
+                sift({ location: { $near: bermudaTriangle, $options: { maxDistance: '13208km' } } })({
+                    location: jaxDowntown,
+                })
+            ).toBe(true);
+
+            expect(
+                sift({ location: { $near: bermudaTriangle, $options: { maxDistance: '13206km' } } })({
+                    location: jaxDowntown,
+                })
+            ).toBe(false);
+
+            expect(
+                sift({ location: { $near: bermudaTriangle, $options: { maxDistance: '13208kilometers' } } })({
+                    location: jaxDowntown,
+                })
+            ).toBe(true);
+
+            expect(
+                sift({ location: { $near: bermudaTriangle, $options: { maxDistance: '13206kilometers' } } })({
+                    location: jaxDowntown,
+                })
+            ).toBe(false);
+
+            expect(
+                sift({ location: { $near: bermudaTriangle, $options: { maxDistance: 2.08 } } })({
+                    location: jaxDowntown,
+                })
+            ).toBe(true);
+
+            expect(
+                sift({ location: { $near: bermudaTriangle, $options: { maxDistance: 2.06 } } })({
+                    location: jaxDowntown,
+                })
+            ).toBe(false);
+
+            expect(() =>
+                sift({ location: { $near: bermudaTriangle, $options: { maxDistance: '13206m' } } })({
+                    location: jaxDowntown,
+                })
+            ).toThrow();
         });
     });
 
