@@ -7,6 +7,7 @@
     "license": "MIT",
     "main": "./dist/mongoes.cjs.js",
     "types": "./dist/mongoes.cjs.d.ts",
+    "sideEffects": false,
     "exports": {
         ".": {
             "require": {
@@ -16,16 +17,6 @@
             "import": {
                 "types": "./dist/mongoes.d.ts",
                 "default": "./dist/mongoes.es.js"
-            }
-        },
-        "./sift": {
-            "require": {
-                "types": "./dist/sift.d.ts",
-                "default": "./dist/sift.cjs.js"
-            },
-            "import": {
-                "types": "./dist/sift.d.ts",
-                "default": "./dist/sift.es.js"
             }
         },
         "./util": {

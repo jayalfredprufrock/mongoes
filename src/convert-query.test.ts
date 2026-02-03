@@ -69,25 +69,25 @@ describe('convertQuery()', () => {
         });
 
         test('with explicit inclusive', () => {
-            expect(convertQuery({ age: { $between: [30, 40], $options: { exclusive: false } } })).toEqual({
+            expect(convertQuery({ age: { $between: [30, 40], $exclusive: false } })).toEqual({
                 bool: { must: { range: { age: { gte: 30, lte: 40 } } } },
             });
         });
 
         test('with explicit exclusive', () => {
-            expect(convertQuery({ age: { $between: [30, 40], $options: { exclusive: true } } })).toEqual({
+            expect(convertQuery({ age: { $between: [30, 40], $exclusive: true } })).toEqual({
                 bool: { must: { range: { age: { gt: 30, lt: 40 } } } },
             });
         });
 
         test('with explicit exclusive min', () => {
-            expect(convertQuery({ age: { $between: [30, 40], $options: { exclusive: 'min' } } })).toEqual({
+            expect(convertQuery({ age: { $between: [30, 40], $exclusive: 'min' } })).toEqual({
                 bool: { must: { range: { age: { gt: 30, lte: 40 } } } },
             });
         });
 
         test('with explicit exclusive max', () => {
-            expect(convertQuery({ age: { $between: [30, 40], $options: { exclusive: 'max' } } })).toEqual({
+            expect(convertQuery({ age: { $between: [30, 40], $exclusive: 'max' } })).toEqual({
                 bool: { must: { range: { age: { gte: 30, lt: 40 } } } },
             });
         });
@@ -95,6 +95,36 @@ describe('convertQuery()', () => {
         test('throws when filter operand is invalid', () => {
             expect(() => convertQuery({ age: { $between: 3 } })).toThrow();
             expect(() => convertQuery({ age: { $between: [3, 2, 1] } })).toThrow();
+        });
+    });
+
+    describe('supports $near operator', () => {
+        test('with default options', () => {
+            expect(convertQuery({ location: { $near: [25, -71], $maxDistance: '10mi' } })).toEqual({
+                bool: { must: { geo_distance: { location: [25, -71], distance: '10mi' } } },
+            });
+        });
+
+        test('with type option', () => {
+            expect(convertQuery({ location: { $near: [25, -71], $maxDistance: '10mi', $distanceType: 'plane' } })).toEqual({
+                bool: { must: { geo_distance: { location: [25, -71], distance: '10mi', distance_type: 'plane' } } },
+            });
+        });
+
+        test('with lat/lon operand', () => {
+            expect(convertQuery({ location: { $near: { lon: 25, lat: -71 }, $maxDistance: '10mi' } })).toEqual({
+                bool: { must: { geo_distance: { location: [25, -71], distance: '10mi' } } },
+            });
+        });
+
+        test('with numeric $maxDistance treated as radians (mongodb default)', () => {
+            expect(convertQuery({ location: { $near: [25, -71], $maxDistance: 10 } })).toEqual({
+                bool: { must: { geo_distance: { location: [25, -71], distance: `${10 * 3959}mi` } } },
+            });
+        });
+
+        test('throws when no distance option is passed', () => {
+            expect(() => convertQuery({ location: { $near: [25, -71] } })).toThrow();
         });
     });
 
@@ -136,6 +166,26 @@ describe('convertQuery()', () => {
                             },
                         },
                     },
+                },
+            });
+        });
+
+        test('$elemMatch with implicit and', () => {
+            expect(convertQuery({ genre: 'jazz', works: { $elemMatch: { key: 'C', bpm: 130 } } })).toEqual({
+                bool: {
+                    must: [
+                        { term: { genre: 'jazz' } },
+                        {
+                            nested: {
+                                path: 'works',
+                                query: {
+                                    bool: {
+                                        must: [{ term: { 'works.key': 'C' } }, { term: { 'works.bpm': 130 } }],
+                                    },
+                                },
+                            },
+                        },
+                    ],
                 },
             });
         });
@@ -274,10 +324,10 @@ describe('convertQuery()', () => {
             });
         });
 
-        test('with "i" flag', () => {
+        test('with $caseInsensitive=true', () => {
             expect(
                 convertQuery({
-                    name: { $like: '*b%ss?', $options: 'i' },
+                    name: { $like: '*b%ss?', $caseInsensitive: true },
                 })
             ).toEqual({
                 bool: {
@@ -313,10 +363,10 @@ describe('convertQuery()', () => {
             });
         });
 
-        test('with "i" flag', () => {
+        test('with $caseInsensitive=true', () => {
             expect(
                 convertQuery({
-                    name: { $unlike: '*b%ss?', $options: 'i' },
+                    name: { $unlike: '*b%ss?', $caseInsensitive: true },
                 })
             ).toEqual({
                 bool: {
@@ -352,10 +402,10 @@ describe('convertQuery()', () => {
             });
         });
 
-        test('with "i" flag', () => {
+        test('with $caseInsensitive=true', () => {
             expect(
                 convertQuery({
-                    name: { $includes: 'bus', $options: 'i' },
+                    name: { $includes: 'bus', $caseInsensitive: true },
                 })
             ).toEqual({
                 bool: {
@@ -391,10 +441,10 @@ describe('convertQuery()', () => {
             });
         });
 
-        test('with "i" flag', () => {
+        test('with $caseInsensitive=true', () => {
             expect(
                 convertQuery({
-                    name: { $excludes: 'bus', $options: 'i' },
+                    name: { $excludes: 'bus', $caseInsensitive: true },
                 })
             ).toEqual({
                 bool: {
@@ -430,10 +480,10 @@ describe('convertQuery()', () => {
             });
         });
 
-        test('with "i" flag', () => {
+        test('with $caseInsensitive=true', () => {
             expect(
                 convertQuery({
-                    name: { $prefix: 'deb', $options: 'i' },
+                    name: { $prefix: 'deb', $caseInsensitive: true },
                 })
             ).toEqual({
                 bool: {
@@ -470,8 +520,8 @@ describe('convertQuery()', () => {
 
     describe('supports custom operators', () => {
         const operators = {
-            $fuzz: (field: string, operand: string, options?: { fuzziness?: number | 'AUTO' }) => {
-                return { fuzzy: { [field]: { value: operand, ...options } } };
+            $fuzz: (field: string, operand: string, options?: { $fuzziness?: number | 'AUTO' }) => {
+                return { fuzzy: { [field]: { value: operand, fuzziness: options?.$fuzziness } } };
             },
             $like: (field: string, operand: string) => {
                 return { like: { [field]: { value: operand } } };
@@ -485,7 +535,7 @@ describe('convertQuery()', () => {
         });
 
         test('with options', () => {
-            expect(convertQuery({ name: { $fuzz: 'Deub', $options: { fuzziness: 2 } } }, { operators })).toEqual({
+            expect(convertQuery({ name: { $fuzz: 'Deub', $fuzziness: 2 } }, { operators })).toEqual({
                 bool: { must: { fuzzy: { name: { value: 'Deub', fuzziness: 2 } } } },
             });
         });
@@ -601,7 +651,7 @@ describe('convertQuery()', () => {
     });
 
     describe('supports the most complicated (yet practical) test cases imaginable', () => {
-        test('case 1', () => {
+        test('$or with implicit $and', () => {
             expect(
                 convertQuery({
                     $or: [
@@ -624,7 +674,7 @@ describe('convertQuery()', () => {
             });
         });
 
-        test('case 2', () => {
+        test('$and with nested $or', () => {
             expect(
                 convertQuery({
                     year: { $gt: 1928 },
@@ -659,6 +709,10 @@ describe('convertQuery()', () => {
     });
 
     describe('throws', () => {
+        test('when using multiple operators in a single condition', () => {
+            expect(() => convertQuery({ year: { $gt: 1928, $lt: 1930 } })).toThrow();
+        });
+
         test('when encountering an unsupported operator', () => {
             expect(() => convertQuery({ field: { $bogus: 3 } })).toThrow();
         });

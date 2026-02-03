@@ -1,47 +1,33 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-const negatedOps: Record<string, string> = {
-    $ne: '$eq',
-    $nin: '$in',
-    $unlike: '$like',
-    $nempty: '$empty',
-    $excludes: '$includes',
-};
-const boolOps: Record<string, string> = { $and: 'must', $or: 'should', $nor: 'must_not' };
-
-type CustomOperator = (field: string, operand: any, options?: any) => any;
-
-interface ConvertQueryConfig {
-    operators?: Record<`$${string}`, CustomOperator>;
-}
-
-export const isOperator = (op: string): op is `$${string}` => {
-    return op.startsWith('$');
-};
+import { compoundOperatorsMap } from './constants';
+import { ConvertQueryConfig, Condition } from './types';
+import { isCompoundOperator, isObj, parseCondition, locationToLatLonTuple } from './util';
 
 export const convertQuery = (query: any, config?: ConvertQueryConfig, pathPrefix = '', inBool = false): any => {
     const esQuery: any = {};
-    for (const key in query) {
-        if (boolOps[key]) {
-            query[key].forEach((q: any) => {
-                addBoolQuery(esQuery, boolOps[key] as any, convertQuery(q, config, pathPrefix, true));
-            });
-        } else if (key === '$not') {
-            addBoolQuery(esQuery, 'must_not', convertQuery(query.$not, config, pathPrefix, true));
-        } else if (query[key] instanceof Object) {
-            const { $options, ...operatorAndOperand } = query[key];
-            const [operator = '', operand] = Object.entries(operatorAndOperand)[0] ?? [];
-            const boolType = negatedOps[operator] ? 'must_not' : 'must';
-            addBoolQuery(esQuery, boolType, convertExp(`${pathPrefix}${key}`, negatedOps[operator] ?? operator, operand, $options, config));
-        } else if (key[0] !== '$') {
-            addBoolQuery(esQuery, 'must', convertExp(`${pathPrefix}${key}`, '$eq', query[key], undefined, config));
+
+    if (!isObj(query)) {
+        throw new Error('Mongoes queries must be non-empty objects.');
+    }
+
+    for (const [fieldOrOperator, conditionOrOperand] of Object.entries(query)) {
+        const fieldPath = `${pathPrefix}${fieldOrOperator}`;
+        if (isCompoundOperator(fieldOrOperator)) {
+            const queries = [conditionOrOperand].flat();
+            for (const query of queries) {
+                addBoolQuery(esQuery, compoundOperatorsMap[fieldOrOperator], convertQuery(query, config, pathPrefix, true));
+            }
+        } else {
+            const condition = parseCondition(conditionOrOperand, config?.operators);
+            addBoolQuery(esQuery, condition.negated ? 'must_not' : 'must', convertExp(`${fieldPath}`, condition));
         }
     }
 
     // small optimization to prevent redundant top level "must",
     // i.e. { bool: { must: { bool: {} } }}
     if (
-        Object.keys(esQuery?.bool).length === 1 &&
+        Object.keys(esQuery?.bool ?? {}).length === 1 &&
         typeof esQuery?.bool?.must === 'object' &&
         !Array.isArray(esQuery?.bool?.must) &&
         (inBool || esQuery.bool.must.bool)
@@ -52,7 +38,7 @@ export const convertQuery = (query: any, config?: ConvertQueryConfig, pathPrefix
     return esQuery;
 };
 
-export const addBoolQuery = (query: any, type: 'must' | 'should' | 'must_not', exp: unknown): any => {
+export const addBoolQuery = (query: any, type: 'must' | 'should' | 'must_not', exp: any): any => {
     if (!query.bool) {
         query.bool = {};
     }
@@ -68,65 +54,68 @@ export const addBoolQuery = (query: any, type: 'must' | 'should' | 'must_not', e
     }
 };
 
-export const convertExp = (field: string, operator: string, operand: any, options?: any, config?: ConvertQueryConfig): any => {
-    if (!isOperator(operator)) {
-        throw new Error('Operators must start with "$"');
+export const convertExp = (field: string, condition: Condition, config?: ConvertQueryConfig): any => {
+    if (typeof condition.operator === 'function') {
+        return condition.operator(field, condition.operand, condition.options);
     }
 
-    const customOp = config?.operators?.[operator];
-    if (typeof customOp === 'function') {
-        return customOp(field, operand, options);
-    }
-
-    switch (operator) {
+    switch (condition.operator) {
         case '$eq': {
-            return { term: { [field]: operand } };
+            return { term: { [field]: condition.operand } };
         }
 
         case '$exists': {
             const exp = { exists: { field } };
-            return operand ? exp : notExp(exp);
+            return condition.operand ? exp : notExp(exp);
         }
 
         case '$in':
-            return { terms: { [field]: operand } };
+            return { terms: { [field]: condition.operand } };
 
         case '$all': {
-            return { terms_set: { [field]: { terms: operand, minimum_should_match_script: { source: 'params.num_terms' } } } };
+            return { terms_set: { [field]: { terms: condition.operand, minimum_should_match_script: { source: 'params.num_terms' } } } };
         }
 
         case '$lt':
         case '$lte':
         case '$gt':
         case '$gte': {
-            return { range: { [field]: { [operator.slice(1)]: operand } } };
+            return { range: { [field]: { [condition.operator.slice(1)]: condition.operand } } };
         }
 
         case '$between': {
-            if (!Array.isArray(operand) || operand.length !== 2) {
-                throw new Error('$between operator expects operand to be a tuple of length two.');
+            if (!Array.isArray(condition.operand) || condition.operand.length !== 2) {
+                throw new Error('$between operator expects operand to be a numeric tuple of length two.');
             }
 
-            const { exclusive = false } = options && typeof options === 'object' ? options : {};
+            const { $exclusive = false } = condition.options ?? {};
 
-            const [min, max] = operand;
-            const minOp = exclusive === true || exclusive === 'min' ? 'gt' : 'gte';
-            const maxOp = exclusive === true || exclusive === 'max' ? 'lt' : 'lte';
+            const [min, max] = condition.operand;
+            const minOp = $exclusive === true || $exclusive === 'min' ? 'gt' : 'gte';
+            const maxOp = $exclusive === true || $exclusive === 'max' ? 'lt' : 'lte';
 
             return { range: { [field]: { [minOp]: min, [maxOp]: max } } };
         }
 
-        case '$elemMatch': {
-            return {
-                nested: {
-                    path: field,
-                    query: convertQuery(operand, config, `${field}.`),
-                },
-            };
+        case '$near': {
+            const { $maxDistance, $distanceType } = condition.options ?? {};
+            if (!$maxDistance) {
+                throw new Error('$near operator requies a $maxDistance option.');
+            }
+
+            const [lon, lat] = locationToLatLonTuple(condition.operand);
+
+            const distance = typeof $maxDistance === 'number' ? `${$maxDistance * 3959}mi` : $maxDistance;
+
+            return { geo_distance: { [field]: [lon, lat], distance, distance_type: $distanceType } };
         }
 
         case '$regex': {
-            const regex = operand instanceof RegExp ? operand : new RegExp(String(operand), options?.toString());
+            const regex =
+                condition.operand instanceof RegExp
+                    ? condition.operand
+                    : new RegExp(String(condition.operand), condition.options?.$options);
+
             const exp: Record<string, string | boolean> = { value: regex.source };
             if (regex.flags.includes('i')) {
                 exp.case_insensitive = true;
@@ -135,42 +124,49 @@ export const convertExp = (field: string, operator: string, operand: any, option
         }
 
         case '$like': {
-            const exp: Record<string, string | boolean> = { value: String(operand).replace(/%/g, '*') };
-            if (options?.toString().includes('i')) {
+            const exp: Record<string, string | boolean> = { value: String(condition.operand).replace(/%/g, '*') };
+            if (condition.options?.$caseInsensitive) {
                 exp.case_insensitive = true;
             }
             return { wildcard: { [field]: exp } };
         }
 
         case '$includes': {
-            const exp: Record<string, string | boolean> = { value: `*${String(operand)}*` };
-            if (options?.toString().includes('i')) {
+            const exp: Record<string, string | boolean> = { value: `*${String(condition.operand)}*` };
+            if (condition.options?.$caseInsensitive) {
                 exp.case_insensitive = true;
             }
             return { wildcard: { [field]: exp } };
         }
 
         case '$prefix': {
-            const exp: Record<string, string | boolean> = { value: String(operand) };
-            if (options?.toString().includes('i')) {
+            const exp: Record<string, string | boolean> = { value: String(condition.operand) };
+            if (condition.options?.$caseInsensitive) {
                 exp.case_insensitive = true;
             }
             return { prefix: { [field]: exp } };
         }
 
         case '$ids': {
-            return { ids: { values: operand } };
+            return { ids: { values: condition.operand } };
         }
 
         case '$empty': {
-            if (operand) {
+            if (condition.operand) {
                 return { bool: { should: [notExp({ exists: { field } }), { term: { [field]: '' } }] } };
             }
             return { bool: { must: [{ exists: { field } }, notExp({ term: { [field]: '' } })] } };
         }
-    }
 
-    throw new Error('Unsupported operator');
+        case '$elemMatch': {
+            return {
+                nested: {
+                    path: field,
+                    query: convertQuery(condition.operand, config, `${field}.`),
+                },
+            };
+        }
+    }
 };
 
 export const notExp = (exp: unknown): any => {

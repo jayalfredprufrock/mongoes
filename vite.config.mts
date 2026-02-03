@@ -7,7 +7,6 @@ export default defineConfig({
         lib: {
             entry: {
                 mongoes: 'src/index.ts',
-                sift: 'src/sift.ts',
                 util: 'src/util.ts',
             },
             formats: ['es', 'cjs'],

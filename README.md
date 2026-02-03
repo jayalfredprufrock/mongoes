@@ -1,7 +1,8 @@
 # MongoES
 
 Meet the tiny and tasty TypeScript library for best-effort conversion of MongoDB search queries into equivalent ElasticSearch queries.
-Supports most queries that make sense within the context of ES and also provides support for custom operations. Zero dependencies.
+Supports most queries that make sense within the context of ES and also provides support for custom operations. A utility is also provided
+to filter in-memory objects using the same syntax. Zero dependencies.
 
 ```sh
 npm i @jayalfredprufrock/mongoes
@@ -40,10 +41,62 @@ const query = convertQuery({
 // }
 ```
 
+## 2.0 Release Breaking Changes
+
+-   queries and options are strongly typed (use isMongoesQuery() type predicate for unknown objects)
+-   introduced `makeFilter()` to replace reliance on siftjs for in-memory filtering
+-   options are specified directly on operation objects (with `$` prefix), instead of nested under $options.
+
 ## Built-in Operators
 
-See [MongoDb docs](https://www.mongodb.com/docs/manual/reference/operator/query/) for a list of operators and options. Also check out the [sift.js](https://github.com/crcn/sift.js#readme) library, which provides support for evaluating/filtering in-memory objects using this same mongo-style syntax. A major motiviation for MongoES was to have a single filtering/querying syntax that could be used both against ES indexes and in-memory objects. This does come with caveats, as elasticsearch often relies on field mappings
-to perform coercion intelligently.
+-   mention caveat about $eq and arrays. (to avoid footguns, typings disallow arrays on $eq/$ne)
+
+In general, consult the [MongoDb docs](https://www.mongodb.com/docs/manual/reference/operator/query/) for operator usage and options
+or the [sift.js](https://github.com/crcn/sift.js#readme) library, which similarly provides support for evaluating/filtering in-memory
+objects using mongo-style syntax. Note that unlike mongo and siftjs, this library does not support adjacent operators for a single field
+(i.e. implicit $and). Instead use the $and operator to combine multiple conditions.
+
+### Date Math
+
+This library does its best to reasonably replicate elasticsearch behavior when working with date range queries, including
+supporting date math expressions in the filter operand. Without explicit field mappings though, there are situations where
+coercion rules cannot be reliably applied. Do not rely on having perfectly matched behavior unless you have explicitly tested
+your specific expression requirements.
+
+```ts
+const filter = makeFilter({ createdAt: { $gt: 'now-1y/d' } });
+
+filter({ createdAt: Date.now() }); //true
+```
+
+## Geospatial Queries ($near)
+
+Basic support for `$near` queries is included, but not all mongodb options are available, specifically `$geometry` or `$minDistance`.
+The operand can be lat/lon object when used with ES, but mongodb compatiblity requires operand be in legacy coordinates (`[lon, lat]` tuple).
+Similarly, when used with mongodb, `$maxDistance` option must use numeric value in radians, while ES additionally allows for numeric strings
+with distance units. The following units are supported: `miles/mi`, `meters/m`, `kilometers/km`. Finally, when used with ES, an additional
+option `$distanceType` can be used to switch between "arc" (default) and "plane" (faster but less accurate) calculations. WKT string and geohash
+operands are not supported. Sift support for this operator (along with its limitations) is also supported.
+
+```ts
+const query = convertQuery({ point: { $near: [25, -71], $maxDistance: 1 } });
+
+// query (1 earth radian = 3959 miles)
+// {
+//    bool: {
+//        must: { geo_distance: { location: [25, -71], distance: '3959mi' }
+//    }
+// }
+
+const query = convertQuery({ point: { $near: { lon: 25, lat: -71 }, $maxDistance: '6378km', $distanceType: 'plane' } });
+
+// query (1 earth radian = 6378km)
+// {
+//    bool: {
+//        must: { geo_distance: { location: [25, -71], distance: '3959mi' }
+//    }
+// }
+```
 
 ## Custom Operators
 
@@ -88,59 +141,48 @@ const query = convertQuery({ name: { $fuzz: 'Mangeos', $options: { fuzziness: 2 
 //}
 ```
 
-### Sift Filters
+## In-memory Filtering (makeFilter)
 
-For those using this library alongside [sift.js](https://github.com/crcn/sift.js#readme), mongoes exports a set of custom sift.js operators providing support for the custom operators this library ships with. It also overrides the comparative operators so that they behave more like elasticsearch, including support for date math.
+This library provides a utility `makeFilter()` that can be used to test objects against a query. Unless otherwise noted,
+all operations/options are supported. A major motiviation for MongoES was to have a single filtering/querying syntax that
+could be used against both ES indexes and in-memory objects. This does come with caveats, as elasticsearch often relies
+on field mappings to perform coercion intelligently. This library aims to replicate ES behavior (as opposed to mongodb)
+as closely as possible, however if strong guaranatees are required, particularly around coercion, arrays, and malformed
+queries, test specific use cases accordingly. Please open an issue if you discover any inconsistencies.
 
-To use, begin by making sure sift.js is installed:
+// show example usage of makeFilter()
 
-```sh
-npm i sift
-```
+## Sift Library
 
-Then either import and use the wrapped sift directly:
+Because [sift.js](https://github.com/crcn/sift.js#readme) also leverages mongodb style syntax, it can be used to perform
+in-memory filtering on the same queries used to query elasticsearch. However, keep in mind that there are extra operators
+supported by this library that are not supported by sift. Additionally, sift (and to some degree mongodb) supports using
+adjacent operators on a single field (i.e. `{ age: { $gt: 25, $lt: 30 }} )`) as an implicit `$and` operation. This library
+does not support this style syntax to allow for strongly typed operator options. Finally, ES does not have the concept
+of array or null fields, leading to differences in behavior. As an example, sift will use the `$eq` operator to perform
+deep equality on arrays, while this library will return true as long as the operand is present among any of the field's
+indexed values (more like `$in`).
 
-```ts
-import { sift } from '@jayalfredprufrock/mongoes/sift';
+## Contributing
 
-const sifter = sift({ name: { $like: 'M?ngoes' } });
-
-sifter({ name: 'Mangoes' }); // true
-```
-
-or use siftCustomOperations to construct your own:
-
-```ts
-import sift from 'sift';
-import { siftCustomOperations } from '@jayalfredprufrock/mongoes/sift';
-
-const sifter = sift({ name: { $like: 'M?ngoes' } }, { operations: siftCustomOperations });
-
-sifter({ name: 'Mongoes' }); // true
-```
-
-### Date Math
-
-This library does its best to reasonably replicate elasticsearch behavior when working with date range queries, including
-supporting date math expressions in the filter operand. Without explicit field mappings though, there are situations where
-coercion rules cannot be reliably applied. Do not rely on having perfectly matched behavior unless you have explicitly tested
-your specific expression requirements.
-
-```ts
-const sifter = sift({ createdAt: { $gt: 'now-1y/d' } });
-
-sifter({ createdAt: Date.now() }); //true
-```
+Pull requests (with accompanying tests!) are always welcome. If you wish to add official library support for a new operator,
+make sure to align behavior with ES as closely as possible, documenting any limitations or inconsistencies. You must also
+include makeFilter support (though it is OK to support a subset of options). If a particular operator comes with too many
+caveats, either because it doesn't map cleanly to ES, or its impossible to add makeFilter support because we lack index
+field mapping information at runtime, I may not be able to accept. Please ask first if you are unsure!
 
 ## Notes
 
 -   Assumes valid mongodb queries. No guarantees about what is returned/thrown for invalid mongodb queries. Please create an issue
     if there is specific invalid syntax that you think should be handled differently at runtime.
+-   adjacent operators on the same field (implicit and) are not supported, i.e. `{ createdAt: { $gt: '2012', $lt: '2020' } }`.
+    Use an explicit `$and` instead.
 -   Uses term queries for all text related operators. Might provide support for "match" queries if there is interest.
 -   Not all operators translate cleanly to ES. The following operators are unsupported: `$where`, `$type`, `$size`, `$mod`
 -   `$elemMatch` translates to a nested query
 -   `$or` queries always translate into `should` + `minimum_should_match=1`. This allows adjacent $and operators (including implicit)
     to work as expected.
+-   `$near` query does not support mongodb options.
 -   No guarantee about the syntactical stability of queries to allow future optimizations without a major version bump
 -   Some attempt made to produce compact representations: e.g. removes redundant `{ bool: { must: { bool: exp }}}`
 -   Queries involving regular expressions or wildcards (i.e. `$regex`, `$like`, `$prefix`, etc. ) should be used sparingly since
@@ -148,3 +190,5 @@ sifter({ createdAt: Date.now() }); //true
 -   Lucene's regex engine (mostly PCRE) is not fully compatible with JavaScript's. Of particular note:
     -   only support for `i` flag (case insensitive)
     -   no support for `^` and `$` (start/end anchors)
+
+strict mode, that validates query (but prevents using certain ES specific features)
