@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 2.0.0-beta.0
+
+### Major Changes
+
+-   26289bc: feat: major rewrite for better ES support and no sift dep
+
 ## 1.1.0
 
 ### Minor Changes
