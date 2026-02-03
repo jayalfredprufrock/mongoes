@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 1.2.0
+
+### Minor Changes
+
+-   2acf001: feat: support for near operator
+
 ## 1.1.0
 
 ### Minor Changes
