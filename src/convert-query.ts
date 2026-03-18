@@ -35,15 +35,17 @@ export const convertQuery = (query: any, config?: ConvertQueryConfig, pathPrefix
             const [operator = '', operand] = Object.entries(operatorAndOperand)[0] ?? [];
             const boolType = negatedOps[operator] ? 'must_not' : 'must';
             addBoolQuery(esQuery, boolType, convertExp(`${pathPrefix}${key}`, negatedOps[operator] ?? operator, operand, $options, config));
-        } else if (key[0] !== '$') {
+        } else if (key.charAt(0) !== '$' && query[key] !== undefined) {
             addBoolQuery(esQuery, 'must', convertExp(`${pathPrefix}${key}`, '$eq', query[key], undefined, config));
         }
     }
 
+    if (!Object.keys(esQuery).length) return;
+
     // small optimization to prevent redundant top level "must",
     // i.e. { bool: { must: { bool: {} } }}
     if (
-        Object.keys(esQuery?.bool).length === 1 &&
+        Object.keys(esQuery.bool ?? {}).length === 1 &&
         typeof esQuery?.bool?.must === 'object' &&
         !Array.isArray(esQuery?.bool?.must) &&
         (inBool || esQuery.bool.must.bool)

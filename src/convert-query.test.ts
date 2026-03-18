@@ -15,6 +15,7 @@ describe('convertQuery()', () => {
 
         test('shorthand equality', () => {
             expect(convertQuery({ name: 'Ravel' })).toEqual({ bool: { must: { term: { name: 'Ravel' } } } });
+            expect(convertQuery({ firstName: 'Ravel', lastName: undefined })).toEqual({ bool: { must: { term: { firstName: 'Ravel' } } } });
         });
 
         test('$exists: true', () => {
@@ -49,6 +50,11 @@ describe('convertQuery()', () => {
             expect(convertQuery({ name: { $nempty: false } })).toEqual({
                 bool: { must_not: { bool: { must: [{ exists: { field: 'name' } }, { bool: { must_not: { term: { name: '' } } } }] } } },
             });
+        });
+
+        test('empty expression returns undefined', () => {
+            expect(convertQuery({})).toEqual(undefined);
+            expect(convertQuery({ name: undefined })).toEqual(undefined);
         });
     });
 

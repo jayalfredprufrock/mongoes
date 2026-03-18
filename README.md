@@ -136,6 +136,8 @@ sifter({ createdAt: Date.now() }); //true
 
 -   Assumes valid mongodb queries. No guarantees about what is returned/thrown for invalid mongodb queries. Please create an issue
     if there is specific invalid syntax that you think should be handled differently at runtime.
+-   Implicit equals query with undefined operands are ignored, since elasticsearch doesn't have the concept of undefined values.
+    Note that this behavior is different than sift, which uses strict equality and can filter objects with undefined values.
 -   Uses term queries for all text related operators. Might provide support for "match" queries if there is interest.
 -   Not all operators translate cleanly to ES. The following operators are unsupported: `$where`, `$type`, `$size`, `$mod`
 -   `$elemMatch` translates to a nested query
