@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 1.3.0
+
+### Minor Changes
+
+-   cc90ec2: fix: strip undefined implicit equals operands. return undefined for empty query expressions
+
 ## 1.2.0
 
 ### Minor Changes
