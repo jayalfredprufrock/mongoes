@@ -4,6 +4,10 @@ import { compoundOperatorsMap } from './constants';
 import { ConvertQueryConfig, Condition } from './types';
 import { isCompoundOperator, isObj, parseCondition, locationToLatLonTuple } from './util';
 
+// IMPORTANT!
+// TODO: allow empty object queries, but return undefined
+// TODO: strip implicit equal undefined operands
+
 export const convertQuery = (query: any, config?: ConvertQueryConfig, pathPrefix = '', inBool = false): any => {
     const esQuery: any = {};
 

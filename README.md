@@ -147,8 +147,8 @@ This library provides a utility `makeFilter()` that can be used to test objects 
 all operations/options are supported. A major motiviation for MongoES was to have a single filtering/querying syntax that
 could be used against both ES indexes and in-memory objects. This does come with caveats, as elasticsearch often relies
 on field mappings to perform coercion intelligently. This library aims to replicate ES behavior (as opposed to mongodb)
-as closely as possible, however if strong guaranatees are required, particularly around coercion, arrays, and malformed
-queries, test specific use cases accordingly. Please open an issue if you discover any inconsistencies.
+as closely as possible, however if strong guaranatees are required, particularly around coercion, arrays, undefined values,
+and malformed queries, test specific use cases accordingly. Please open an issue if you discover any unexpected inconsistencies.
 
 // show example usage of makeFilter()
 
@@ -191,4 +191,6 @@ field mapping information at runtime, I may not be able to accept. Please ask fi
     -   only support for `i` flag (case insensitive)
     -   no support for `^` and `$` (start/end anchors)
 
-strict mode, that validates query (but prevents using certain ES specific features)
+## TODO
+
+-   strict mode, that validates query against what the filter helper supports (but prevents using certain ES specific features in doing so)
