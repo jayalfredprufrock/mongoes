@@ -1,7 +1,14 @@
-import * as s from 'sift';
+import siftDefault from 'sift';
 import type { OperationCreator } from 'sift/lib/core';
 import { coerceRangeOperands } from './coerce-range-operands';
 import { distanceToMiles, earthRadiusInMiles, locationToLatLonTuple, toRadians } from './util';
+
+// sift's CJS entry is `module.exports = fn; Object.assign(module.exports, lib)`, so its helpers hang off
+// the exported function rather than being real named exports. Node's static CJS analysis can't see them,
+// so under ESM `import * as s` yields a namespace without `createEqualsOperation` and every operator below
+// throws, while `import { createEqualsOperation }` fails outright at load. Reaching through the default
+// works under both ESM and CJS; the cast restores the types the namespace import used to provide.
+const s = siftDefault as unknown as typeof import('sift');
 
 const regexTokens = ['-', '[', ']', '/', '{', '}', '(', ')', '*', '+', '?', '.', '\\', '^', '$', '|'] as const;
 type RegexToken = (typeof regexTokens)[number];

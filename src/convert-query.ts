@@ -21,6 +21,10 @@ export const isOperator = (op: string): op is `$${string}` => {
     return op.startsWith('$');
 };
 
+// TODO: consider returning empty bool expression instead of undefined when stripping undefined
+// so { bool: {} }, then support things like { $and: [ name: undefined ], $not: { name: undefined } }
+// it would be acceptable to allow empty compound arrays, i.e. must: []
+
 export const convertQuery = (query: any, config?: ConvertQueryConfig, pathPrefix = '', inBool = false): any => {
     const esQuery: any = {};
     for (const key in query) {

@@ -635,6 +635,12 @@ describe('convertQuery()', () => {
                 },
             });
         });
+
+        test('strips empty/undefined compound operator expressions', () => {
+            expect(convertQuery({ $and: [{ firstName: undefined }, { lastName: 'Ravel' }] })).toEqual({
+                bool: { must: { term: { lastName: 'Ravel' } } },
+            });
+        });
     });
 
     describe('supports the most complicated (yet practical) test cases imaginable', () => {
