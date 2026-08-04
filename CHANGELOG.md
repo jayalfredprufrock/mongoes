@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 1.3.1
+
+### Patch Changes
+
+-   71b75b6: wider compatibility sift import
+
 ## 1.3.0
 
 ### Minor Changes
