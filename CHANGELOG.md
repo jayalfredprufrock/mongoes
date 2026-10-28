@@ -1,5 +1,11 @@
 # @jayalfredprufrock/mongoes
 
+## 1.3.2
+
+### Patch Changes
+
+-   a2e7e3a: fix: preserve sibling operator expressions (e.g. `{ $eq: 'x' }`) when expanding `$nin`/`$all` inside `$elemMatch`
+
 ## 1.3.1
 
 ### Patch Changes
