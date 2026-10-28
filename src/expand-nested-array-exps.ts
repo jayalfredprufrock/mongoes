@@ -1,3 +1,5 @@
+const isObj = (obj: unknown): obj is Record<string, any> => !!obj && typeof obj === 'object' && !Array.isArray(obj);
+
 /*
 Hacky way to allow $all/$nin operators to work as expected
 when used within $elemMatch queries. It looks for queries
@@ -35,14 +37,16 @@ export const expandNestedArrayExps = (query: any): any => {
             const expandedNinExps: any[] = [];
             const nonExpandedExps: any = {};
             Object.entries<any>(nestedExp.$elemMatch).forEach(([field, exp]) => {
-                if (exp && typeof exp === 'object') {
-                    if (Array.isArray(exp.$all)) {
-                        expandedAllExps.push(...exp.$all.map((value: any) => ({ [field]: value })));
-                    }
-                    if (Array.isArray(exp.$nin)) {
-                        expandedNinExps.push(...exp.$nin.map((value: any) => ({ [field]: value })));
-                    }
-                } else {
+                const hasAll = isObj(exp) && Array.isArray(exp.$all);
+                const hasNin = isObj(exp) && Array.isArray(exp.$nin);
+                if (hasAll) {
+                    expandedAllExps.push(...exp.$all.map((value: any) => ({ [field]: value })));
+                }
+                if (hasNin) {
+                    expandedNinExps.push(...exp.$nin.map((value: any) => ({ [field]: value })));
+                }
+                if (!hasAll && !hasNin) {
+                    // preserve sibling conditions (including operator objects like { $eq: 'x' })
                     nonExpandedExps[field] = exp;
                 }
             });

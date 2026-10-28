@@ -140,4 +140,43 @@ describe('expandNestedArrayExps()', () => {
         expect(expandedSift({ $not: { responses: { $elemMatch: { id: 'test', choice: { $nin: ['C', 'D'] } } } } })(data)).toBe(true);
         expect(expandedSift({ $not: { responses: { $elemMatch: { id: 'test', choice: { $all: ['C', 'D'] } } } } })(data)).toBe(true);
     });
+
+    test('preserves sibling operator expressions when expanding $nin/$all', () => {
+        const data = {
+            blocks: [
+                {
+                    blockId: 'M',
+                    response: [
+                        { statementId: 'S1', choiceId: 'B' },
+                        { statementId: 'S2', choiceId: 'A' },
+                    ],
+                },
+            ],
+        };
+
+        const makeQuery = (choiceExp: any) => ({
+            blocks: {
+                $elemMatch: {
+                    blockId: { $eq: 'M' },
+                    response: { $elemMatch: { statementId: { $eq: 'S1' }, choiceId: choiceExp } },
+                },
+            },
+        });
+
+        // A was only picked in S2, so "S1 none of [A]" should pass
+        expect(expandedSift(makeQuery({ $nin: ['A'] }))(data)).toBe(true);
+        expect(expandedSift(makeQuery({ $nin: ['B'] }))(data)).toBe(false);
+
+        // A and B were picked in different statements, so "S1 all of [A, B]" should fail
+        expect(expandedSift(makeQuery({ $all: ['A', 'B'] }))(data)).toBe(false);
+        expect(expandedSift(makeQuery({ $all: ['B'] }))(data)).toBe(true);
+
+        expect(expandedSift({ blocks: { $elemMatch: { blockId: { $eq: 'X' }, 'response.choiceId': { $nin: ['A'] } } } })(data)).toBe(true);
+        expect(expandedSift({ blocks: { $elemMatch: { blockId: { $eq: 'M' }, 'response.choiceId': { $all: ['A', 'B'] } } } })(data)).toBe(
+            true
+        );
+        expect(expandedSift({ blocks: { $elemMatch: { blockId: { $eq: 'X' }, 'response.choiceId': { $all: ['A', 'B'] } } } })(data)).toBe(
+            false
+        );
+    });
 });
