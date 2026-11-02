@@ -337,6 +337,24 @@ describe('sift()', () => {
     });
 
     describe('overridden comparator operations ($gt, $gte, $lt, $lte)', () => {
+        test('never matches a missing or null field, like an OpenSearch range query', () => {
+            for (const op of ['$gt', '$gte', '$lt', '$lte']) {
+                for (const operand of [100, 'a', 'now-1h']) {
+                    expect(sift({ value: { [op]: operand } })({}), `${op} ${operand} on missing`).toBe(false);
+                    expect(sift({ value: { [op]: operand } })({ value: null }), `${op} ${operand} on null`).toBe(false);
+                }
+            }
+            expect(sift({ value: { $between: [1, 5] } })({})).toBe(false);
+            expect(sift({ value: { $between: [1, 5] } })({ value: null })).toBe(false);
+        });
+
+        test('never matches a missing field inside $elemMatch', () => {
+            const sifter = sift({ items: { $elemMatch: { id: 'a', 'nested.value': { $gte: 100 } } } });
+            expect(sifter({ items: [{ id: 'a', nested: [{ other: 1 }] }] })).toBe(false);
+            expect(sifter({ items: [{ id: 'a' }] })).toBe(false);
+            expect(sifter({ items: [{ id: 'a', nested: [{ value: 150 }] }] })).toBe(true);
+        });
+
         test('retains normal $lt behavior', () => {
             const sifter = sift({ value: { $lt: 0 } });
             expect(sifter({ value: -1 })).toBe(true);

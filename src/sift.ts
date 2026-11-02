@@ -10,6 +10,9 @@ import { distanceToMiles, earthRadiusInMiles, locationToLatLonTuple, toRadians }
 // works under both ESM and CJS; the cast restores the types the namespace import used to provide.
 const s = siftDefault as unknown as typeof import('sift');
 
+// OpenSearch range queries never match a missing or null field; without this, coercion compares the string "undefined"
+const isMissing = (value: unknown) => value === undefined || value === null;
+
 const regexTokens = ['-', '[', ']', '/', '{', '}', '(', ')', '*', '+', '?', '.', '\\', '^', '$', '|'] as const;
 type RegexToken = (typeof regexTokens)[number];
 const escapeAllRegex = RegExp('[' + regexTokens.join('\\') + ']', 'g');
@@ -109,6 +112,7 @@ export const siftCustomOperations: Record<string, OperationCreator<any>> = {
     $lt(params, ownerQuery, options) {
         return s.createEqualsOperation(
             (value: unknown) => {
+                if (isMissing(value)) return false;
                 const [fieldOp, filterOp] = coerceRangeOperands(value, params);
                 return fieldOp < filterOp;
             },
@@ -119,6 +123,7 @@ export const siftCustomOperations: Record<string, OperationCreator<any>> = {
     $lte(params, ownerQuery, options) {
         return s.createEqualsOperation(
             (value: unknown) => {
+                if (isMissing(value)) return false;
                 const [fieldOp, filterOp] = coerceRangeOperands(value, params);
                 return fieldOp <= filterOp;
             },
@@ -129,6 +134,7 @@ export const siftCustomOperations: Record<string, OperationCreator<any>> = {
     $gt(params, ownerQuery, options) {
         return s.createEqualsOperation(
             (value: unknown) => {
+                if (isMissing(value)) return false;
                 const [fieldOp, filterOp] = coerceRangeOperands(value, params);
                 return fieldOp > filterOp;
             },
@@ -139,6 +145,7 @@ export const siftCustomOperations: Record<string, OperationCreator<any>> = {
     $gte(params, ownerQuery, options) {
         return s.createEqualsOperation(
             (value: unknown) => {
+                if (isMissing(value)) return false;
                 const [fieldOp, filterOp] = coerceRangeOperands(value, params);
                 return fieldOp >= filterOp;
             },
@@ -151,6 +158,7 @@ export const siftCustomOperations: Record<string, OperationCreator<any>> = {
         const { exclusive = false } = typeof ownerQuery?.$options === 'object' ? ownerQuery.$options : {};
         return s.createEqualsOperation(
             (value: unknown) => {
+                if (isMissing(value)) return false;
                 const [fieldOp, filterOpMin] = coerceRangeOperands(value, params[0]);
                 const [_, filterOpMax] = coerceRangeOperands(value, params[1]);
 
