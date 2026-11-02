@@ -725,4 +725,77 @@ describe('convertQuery()', () => {
             expect(() => convertQuery({ field: {} })).toThrow();
         });
     });
+
+    describe('undefined implicit equals operands', () => {
+        test('are stripped', () => {
+            expect(convertQuery({ name: undefined, age: 5 } as any)).toEqual({ bool: { must: { term: { age: 5 } } } });
+        });
+
+        test('return undefined when nothing remains at the top level', () => {
+            expect(convertQuery({ name: undefined } as any)).toBeUndefined();
+        });
+
+        test('match everything when nothing remains in a nested query', () => {
+            expect(convertQuery({ $and: [{ name: undefined }] } as any)).toEqual({ bool: { must: { match_all: {} } } });
+            expect(convertQuery({ $not: { name: undefined } } as any)).toEqual({ bool: { must_not: { match_all: {} } } });
+            expect(convertQuery({ works: { $elemMatch: { key: undefined } } } as any)).toEqual({
+                bool: { must: { nested: { path: 'works', query: { match_all: {} } } } },
+            });
+        });
+    });
+
+    describe('$nin/$all within nested $elemMatch', () => {
+        const makeQuery = (choiceExp: any) => ({
+            blocks: {
+                $elemMatch: {
+                    blockId: { $eq: 'M' },
+                    response: { $elemMatch: { statementId: { $eq: 'S1' }, choiceId: choiceExp } },
+                },
+            },
+        });
+
+        const makeExpected = (responseBool: any) => ({
+            bool: {
+                must: {
+                    nested: {
+                        path: 'blocks',
+                        query: {
+                            bool: {
+                                must: [
+                                    { term: { 'blocks.blockId': 'M' } },
+                                    { nested: { path: 'blocks.response', query: { bool: responseBool } } },
+                                ],
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        const statementTerm = { term: { 'blocks.response.statementId': 'S1' } };
+
+        test('$nin keeps sibling conditions within the same nested query', () => {
+            expect(convertQuery(makeQuery({ $nin: ['A'] }))).toEqual(
+                makeExpected({ must: statementTerm, must_not: { terms: { 'blocks.response.choiceId': ['A'] } } })
+            );
+        });
+
+        test('$all keeps sibling conditions within the same nested query', () => {
+            expect(convertQuery(makeQuery({ $all: ['A', 'B'] }))).toEqual(
+                makeExpected({
+                    must: [
+                        statementTerm,
+                        {
+                            terms_set: {
+                                'blocks.response.choiceId': {
+                                    terms: ['A', 'B'],
+                                    minimum_should_match_script: { source: 'params.num_terms' },
+                                },
+                            },
+                        },
+                    ],
+                })
+            );
+        });
+    });
 });

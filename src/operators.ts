@@ -10,6 +10,7 @@ import {
     isLatLonTuple,
     isObj,
     locationToLatLonTuple,
+    normalizeFieldValue,
     parseCondition,
     toRadians,
 } from './util';
@@ -173,9 +174,13 @@ const $near = (
     });
 };
 
-const $elemMatch = (fieldVal: any[], filterOperand: any): boolean => {
-    if (!Array.isArray(fieldVal)) throw new Error('$elemMatch expects an array of objects as an operand.');
-    return fieldVal.some(fieldValueObj => checkQuery(filterOperand, fieldValueObj));
+const $elemMatch = (fieldVal: MaybeArray<object>, filterOperand: any): boolean => {
+    if (fieldVal === undefined) return false;
+    // like ES nested docs, a single object is treated as an array of one
+    return [fieldVal]
+        .flat()
+        .filter(isObj)
+        .some(fieldValueObj => checkQuery(filterOperand, fieldValueObj));
 };
 
 export const basicOperators = {
@@ -213,7 +218,7 @@ export const checkCondition = (fieldValue: unknown, condition: Condition): boole
         return false;
     }
 
-    const result = (basicOperators[condition.operator] as any)(fieldValue, condition.operand, condition.options);
+    const result = (basicOperators[condition.operator] as any)(normalizeFieldValue(fieldValue), condition.operand, condition.options);
 
     return condition.negated ? !result : result;
 };
@@ -239,6 +244,9 @@ export const checkQuery = (query: any, obj: any): boolean => {
                     passed = !queries.some(q => checkQuery(q, obj));
                     break;
             }
+        } else if (conditionOrOperand === undefined) {
+            // implicit equals with an undefined operand is ignored, mirroring convertQuery
+            continue;
         } else {
             const condition = parseCondition(conditionOrOperand);
             const fieldValue = get(obj, fieldOrOperator);

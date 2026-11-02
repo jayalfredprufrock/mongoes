@@ -4,10 +4,6 @@ import { compoundOperatorsMap } from './constants';
 import { ConvertQueryConfig, Condition } from './types';
 import { isCompoundOperator, isObj, parseCondition, locationToLatLonTuple } from './util';
 
-// IMPORTANT!
-// TODO: allow empty object queries, but return undefined
-// TODO: strip implicit equal undefined operands
-
 export const convertQuery = (query: any, config?: ConvertQueryConfig, pathPrefix = '', inBool = false): any => {
     const esQuery: any = {};
 
@@ -22,10 +18,19 @@ export const convertQuery = (query: any, config?: ConvertQueryConfig, pathPrefix
             for (const query of queries) {
                 addBoolQuery(esQuery, compoundOperatorsMap[fieldOrOperator], convertQuery(query, config, pathPrefix, true));
             }
+        } else if (conditionOrOperand === undefined) {
+            // ES has no concept of undefined values, so implicit equals with an undefined operand is ignored
+            continue;
         } else {
             const condition = parseCondition(conditionOrOperand, config?.operators);
             addBoolQuery(esQuery, condition.negated ? 'must_not' : 'must', convertExp(`${fieldPath}`, condition));
         }
+    }
+
+    // nothing left to filter on (e.g. every operand was undefined). Top level queries return undefined,
+    // while nested queries (compound/$elemMatch) match everything so they evaluate the same as makeFilter
+    if (!esQuery.bool) {
+        return inBool || pathPrefix ? { match_all: {} } : undefined;
     }
 
     // small optimization to prevent redundant top level "must",

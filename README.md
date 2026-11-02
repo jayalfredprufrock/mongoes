@@ -76,7 +76,7 @@ The operand can be lat/lon object when used with ES, but mongodb compatiblity re
 Similarly, when used with mongodb, `$maxDistance` option must use numeric value in radians, while ES additionally allows for numeric strings
 with distance units. The following units are supported: `miles/mi`, `meters/m`, `kilometers/km`. Finally, when used with ES, an additional
 option `$distanceType` can be used to switch between "arc" (default) and "plane" (faster but less accurate) calculations. WKT string and geohash
-operands are not supported. Sift support for this operator (along with its limitations) is also supported.
+operands are not supported. `makeFilter()` also supports this operator (along with its limitations).
 
 ```ts
 const query = convertQuery({ point: { $near: [25, -71], $maxDistance: 1 } });
@@ -110,7 +110,7 @@ OOTB, mongoes includes a few operators that aren't a part of the MongoDB query s
 -   `$prefix` - Maps to [ES Prefix](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-prefix-query.html)
     queries. Similar to `$like`, supports passing "i" to `$options` for case insensitivity.
 -   `$ids` - Maps to ES "ids" query. The operand is an array of document \_ids. The field name is not used when constructing the ES
-    query, however it is used to specify a document-level id field for supporting Sift queries.
+    query, however it is used to specify a document-level id field for `makeFilter()`.
 -   `$empty` (`$nempty`) - Works just like `$exists`, but does not consider empty strings (after trimming) to exist.
 -   `$between` - Shorhand for combining `<` and `>`. The operand is a tuple, `[min, max]`. By default it is inclusive. Use `$options: { exclusive: true }`
     to perform an exclusive comparison. Pass `min` or `max` instead of `true` to control each operand individually.
@@ -180,6 +180,11 @@ field mapping information at runtime, I may not be able to accept. Please ask fi
 -   Uses term queries for all text related operators. Might provide support for "match" queries if there is interest.
 -   Not all operators translate cleanly to ES. The following operators are unsupported: `$where`, `$type`, `$size`, `$mod`
 -   `$elemMatch` translates to a nested query
+-   Implicit equals with an `undefined` operand is ignored, since ES has no concept of undefined values. If nothing remains,
+    `convertQuery()` returns `undefined` at the top level and `match_all` within compound/`$elemMatch` queries.
+-   `makeFilter()` treats field values the way ES indexes them: `null` and empty arrays are considered missing, and `null`
+    array items are ignored. For example, range operators never match a `null` field.
+-   `$nin`/`$all` within `$elemMatch` are evaluated per nested document (along with any sibling conditions), as ES does.
 -   `$or` queries always translate into `should` + `minimum_should_match=1`. This allows adjacent $and operators (including implicit)
     to work as expected.
 -   `$near` query does not support mongodb options.

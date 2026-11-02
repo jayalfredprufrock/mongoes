@@ -864,4 +864,122 @@ describe('makeFilter()', () => {
             expect(filter({ composer: 'Ravel' })).toBe(false);
         });
     });
+
+    describe('null, missing and empty field values (matches ES indexing)', () => {
+        test('range operators never match null fields', () => {
+            for (const operator of ['$gt', '$gte', '$lt', '$lte'] as const) {
+                for (const operand of [5, 'm', '2020-01-01']) {
+                    const filter = makeFilter({ x: { [operator]: operand } } as any);
+                    expect(filter({ x: null })).toBe(false);
+                    expect(filter({})).toBe(false);
+                }
+            }
+            expect(makeFilter({ x: { $between: [0, 'z'] } })({ x: null })).toBe(false);
+        });
+
+        test('null values within arrays are ignored', () => {
+            expect(makeFilter({ x: { $gt: 5 } })({ x: [null, 1] })).toBe(false);
+            expect(makeFilter({ x: { $gt: 5 } })({ x: [null, 10] })).toBe(true);
+            expect(makeFilter({ x: { $in: ['A'] } })({ x: [null, 'A'] })).toBe(true);
+            expect(makeFilter({ x: { $nin: ['A'] } })({ x: [null, 'B'] })).toBe(true);
+            expect(makeFilter({ x: { $all: ['A', 'B'] } })({ x: ['A', null, 'B'] })).toBe(true);
+        });
+
+        test('null and empty array fields are treated as missing', () => {
+            for (const x of [null, [], [null]]) {
+                expect(makeFilter({ x: { $exists: true } })({ x })).toBe(false);
+                expect(makeFilter({ x: { $exists: false } })({ x })).toBe(true);
+                expect(makeFilter({ x: 'A' })({ x })).toBe(false);
+                expect(makeFilter({ x: { $ne: 'A' } })({ x })).toBe(true);
+                expect(makeFilter({ x: { $in: ['A'] } })({ x })).toBe(false);
+                expect(makeFilter({ x: { $nin: ['A'] } })({ x })).toBe(true);
+                expect(makeFilter({ x: { $empty: true } })({ x })).toBe(true);
+            }
+        });
+
+        test('dot notation skips null array items', () => {
+            const filter = makeFilter({ 'tags.key': 'genre' });
+            expect(filter({ tags: [null, { key: 'genre' }] })).toBe(true);
+            expect(filter({ tags: [null, { key: 'era' }] })).toBe(false);
+        });
+    });
+
+    describe('undefined implicit equals operands', () => {
+        test('are ignored', () => {
+            expect(makeFilter({ name: undefined, age: 5 } as any)({ age: 5 })).toBe(true);
+            expect(makeFilter({ name: undefined, age: 5 } as any)({ name: 'Ravel', age: 5 })).toBe(true);
+            expect(makeFilter({ name: undefined, age: 5 } as any)({ age: 6 })).toBe(false);
+        });
+
+        test('leaving an empty query that matches everything', () => {
+            expect(makeFilter({ name: undefined } as any)({})).toBe(true);
+            expect(makeFilter({ $and: [{ name: undefined }] } as any)({})).toBe(true);
+            expect(makeFilter({ $or: [{ name: undefined }] } as any)({})).toBe(true);
+            expect(makeFilter({ $not: { name: undefined } } as any)({})).toBe(false);
+        });
+    });
+
+    describe('$elemMatch on non-array fields (matches ES nested queries)', () => {
+        const filter = makeFilter({ tags: { $elemMatch: { key: 'genre' } } });
+
+        test('missing, null or empty fields never match', () => {
+            expect(filter({})).toBe(false);
+            expect(filter({ tags: null })).toBe(false);
+            expect(filter({ tags: [] })).toBe(false);
+        });
+
+        test('a single object is treated as an array of one', () => {
+            expect(filter({ tags: { key: 'genre' } })).toBe(true);
+            expect(filter({ tags: { key: 'era' } })).toBe(false);
+        });
+    });
+
+    describe('$nin/$all within nested $elemMatch (evaluated per nested doc like ES)', () => {
+        const makeQuery = (choiceExp: any) => ({
+            blocks: {
+                $elemMatch: {
+                    blockId: { $eq: 'M' },
+                    response: { $elemMatch: { statementId: { $eq: 'S1' }, choiceId: choiceExp } },
+                },
+            },
+        });
+
+        const data = {
+            blocks: [
+                {
+                    blockId: 'M',
+                    response: [
+                        { statementId: 'S1', choiceId: 'B' },
+                        { statementId: 'S2', choiceId: 'A' },
+                    ],
+                },
+            ],
+        };
+
+        test('sibling conditions constrain $nin', () => {
+            expect(makeFilter(makeQuery({ $nin: ['A'] }))(data)).toBe(true);
+            expect(makeFilter(makeQuery({ $nin: ['B'] }))(data)).toBe(false);
+            expect(makeFilter(makeQuery({ $nin: ['A', 'B'] }))(data)).toBe(false);
+        });
+
+        test('sibling conditions constrain $all', () => {
+            expect(makeFilter(makeQuery({ $all: ['B'] }))(data)).toBe(true);
+            expect(makeFilter(makeQuery({ $all: ['A', 'B'] }))(data)).toBe(false);
+        });
+
+        test('$all/$nin compare against all values of a multi-valued field within a single nested doc', () => {
+            const multi = { blocks: [{ blockId: 'M', response: [{ statementId: 'S1', choiceId: ['A', 'B'] }] }] };
+            expect(makeFilter(makeQuery({ $all: ['A', 'B'] }))(multi)).toBe(true);
+            expect(makeFilter(makeQuery({ $nin: ['A'] }))(multi)).toBe(false);
+            expect(makeFilter(makeQuery({ $nin: ['C'] }))(multi)).toBe(true);
+        });
+
+        test('$nin requires a matching nested doc to exist', () => {
+            const skipped = { blocks: [{ blockId: 'M', response: [{ statementId: 'S2', choiceId: 'A' }] }] };
+            expect(makeFilter(makeQuery({ $nin: ['A'] }))(skipped)).toBe(false);
+
+            const unanswered = { blocks: [{ blockId: 'M', response: [{ statementId: 'S1' }] }] };
+            expect(makeFilter(makeQuery({ $nin: ['A'] }))(unanswered)).toBe(true);
+        });
+    });
 });

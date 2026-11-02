@@ -125,7 +125,7 @@ export const get = (obj: unknown, path: string): unknown | undefined => {
         for (const segment of path.split('.')) {
             if (Array.isArray(objAtPathOrVal)) {
                 objAtPathOrVal = objAtPathOrVal.flatMap(item => {
-                    return item[segment] ?? [];
+                    return isObj(item) ? (item[segment] ?? []) : [];
                 });
                 continue;
             }
@@ -139,4 +139,16 @@ export const get = (obj: unknown, path: string): unknown | undefined => {
     } catch {
         return;
     }
+};
+
+// ES has no concept of null or empty array values: nulls are not indexed, and a field
+// with no indexed values is treated as missing. Normalize in-memory values to match.
+export const normalizeFieldValue = (fieldVal: unknown): unknown => {
+    if (fieldVal === null) return undefined;
+    if (!Array.isArray(fieldVal)) return fieldVal;
+
+    const values = fieldVal.filter(v => v !== undefined && v !== null);
+    if (!values.length) return undefined;
+
+    return values;
 };
