@@ -13,7 +13,6 @@ export default defineConfig({
             fileName: (format: string, entryName: string) => `${entryName}.${format}.js`,
         },
         rollupOptions: {
-            external: ['sift'],
             output: {
                 sourcemapExcludeSources: true,
             },
